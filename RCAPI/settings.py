@@ -30,9 +30,9 @@ SECRET_KEY = 'django-insecure-o49k%te#0n%&(^vpilpc-c0q6-x7%atju1*!u^=ahzn#*c^tww
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['https://rcapi.onrender.com']
 
-CSRF_TRUSTED_ORIGINS = ['https://robotic-club.loca.lt','https://1ppwuab.localto.net']
+CSRF_TRUSTED_ORIGINS = ['https://rcapi.onrender.com']
 
 ASGI_APPLICATION = "RCAPI.asgi.application"
 #CHANNEL_LAYERS = {
