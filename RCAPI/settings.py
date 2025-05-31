@@ -18,8 +18,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEFENDER_LOGIN_FAILURE_LIMIT = 5  # Number of allowed login attempts
 DEFENDER_COOLOFF_TIME = 300  # Cool-off time in seconds (5 minutes)
-DEFENDER_REDIS_URL = 'redis://localhost:6379/0'  # Use Redis to store failed attempts
-
+#DEFENDER_REDIS_URL = 'redis://localhost:6379/0'  # Use Redis to store failed attempts
+DEFENDER_REDIS_URL= os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
