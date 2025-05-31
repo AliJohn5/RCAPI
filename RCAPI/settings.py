@@ -18,8 +18,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEFENDER_LOGIN_FAILURE_LIMIT = 5  # Number of allowed login attempts
 DEFENDER_COOLOFF_TIME = 300  # Cool-off time in seconds (5 minutes)
-#DEFENDER_REDIS_URL = 'redis://localhost:6379/0'  # Use Redis to store failed attempts
 DEFENDER_REDIS_URL= os.getenv("REDIS_URL", "redis://localhost:6379/0")
+#DEFENDER_REDIS_URL = 'redis://localhost:6379/0'  # Use Redis to store failed attempts
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -44,6 +44,12 @@ ASGI_APPLICATION = "RCAPI.asgi.application"
 #        },
 #    },
 #}
+
+
+B2_BUCKET_NAME = "RoboticAliJohn"
+B2_KEY_ID = "465b41db24b7"
+B2_APPLICATION_KEY = "005ce9175dde7c2a32424c256afccc37a2bf475391"
+
 
 CHANNEL_LAYERS = {
     "default": {
@@ -72,6 +78,7 @@ INSTALLED_APPS = [
     'store',
     'utils',
     'defender',
+    'storages',
 
 ]
 AUTH_USER_MODEL = 'users.RCUser'
@@ -206,3 +213,4 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+DEFAULT_FILE_STORAGE = 'RCAPI.storage_backends.B2PrivateMediaStorage'

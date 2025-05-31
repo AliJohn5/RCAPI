@@ -23,6 +23,19 @@ from django.core.mail import send_mail, EmailMessage
 from django.conf import settings
 from django.utils.html import format_html
 
+from b2sdk.v2 import InMemoryAccountInfo, B2Api
+
+def get_b2_signed_url(file_name, bucket_name='RoboticAliJohn'):
+    info = InMemoryAccountInfo()
+    b2_api = B2Api(info)
+
+    b2_api.authorize_account("production", "<KEY_ID>", "<APPLICATION_KEY>")
+    bucket = b2_api.get_bucket_by_name(bucket_name)
+
+    # Create a signed download URL valid for 1 hour
+    auth_token = bucket.get_download_authorization(file_name, 3600)
+    signed_url = f"https://f005.backblazeb2.com/file/{bucket_name}/{file_name}?Authorization={auth_token}"
+    return signed_url
 
 def generate_random_string(length=10):
     letters = string.ascii_letters + string.digits
@@ -196,8 +209,8 @@ def upload_user_image(request):
     user = request.user
 
     # Delete old image if exists
-    if user.image and user.image.name and os.path.isfile(user.image.path):
-        os.remove(user.image.path)
+    #if user.image and user.image.name and os.path.isfile(user.image.path):
+    #    os.remove(user.image.path)
 
     serializer = RCuserImageSerializer(user, data=request.data, partial=True)
     if serializer.is_valid():
@@ -222,7 +235,8 @@ def get_user_image(request, email):
         return Response({"error": "user not found"}, status=status.HTTP_404_NOT_FOUND)
 
     serializer = RCuserImageSerializer(project,context={'request': request})
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    url = get_b2_signed_url(serializer.data['image'])
+    return Response({'image':url}, status=status.HTTP_200_OK)
 
 
 @api_view(['PUT'])
