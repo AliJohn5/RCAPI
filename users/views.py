@@ -29,7 +29,7 @@ def get_b2_signed_url(file_name, bucket_name='RoboticAliJohn'):
     info = InMemoryAccountInfo()
     b2_api = B2Api(info)
 
-    b2_api.authorize_account("production", "<KEY_ID>", "<APPLICATION_KEY>")
+    b2_api.authorize_account("production", settings.B2_KEY_ID, settings.B2_APP_KEY)
     bucket = b2_api.get_bucket_by_name(bucket_name)
 
     # Create a signed download URL valid for 1 hour
