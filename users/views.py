@@ -18,21 +18,45 @@ from django.conf import settings
 from django.db.models import Q
 from rest_framework.permissions import  IsAuthenticated,AllowAny
 from django.core.files.uploadedfile import UploadedFile
+import random, string
+from django.core.mail import send_mail, EmailMessage
+from django.conf import settings
+from django.utils.html import format_html
+
 
 def generate_random_string(length=10):
     letters = string.ascii_letters + string.digits
     return ''.join(random.choice(letters) for i in range(length))
 
-def send_code_email(to_email,code):
+def send_code_email(to_email, code):
     try:
-        subject = 'Robotic Club Code'
-        message = 'Your reset code for Robotic Club is: ' + code
-        from_email = settings.DEFAULT_FROM_EMAIL
-        recipient_list = [to_email]
-        print(send_mail(subject, message, from_email, recipient_list))
+        subject = 'Robotic Club code'
+        html_message = f'''
+    <div style="max-width: 600px; margin: auto; padding: 30px; background-color: #f9f9f9; border-radius: 10px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; line-height: 1.6;">
+        <div style="text-align: center; padding-bottom: 20px;">
+            <h2 style="margin: 0; color: #2c3e50;">🤖 Robotic Club</h2>
+            <p style="font-size: 14px; color: #888;">Verification Code</p>
+        </div>
+        <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+            <p>Hi there 👋,</p>
+            <p>Here is your one-time code to access the Robotic Club:</p>
+            <p style="font-size: 32px; font-weight: bold; text-align: center; color: #2c3e50; letter-spacing: 2px;">{code}</p>
+            <p>This code can only be used once and will expire soon.</p>
+            <p>If you didn’t request this code, you can safely ignore this email.</p>
+        </div>
+        <div style="text-align: center; margin-top: 30px; font-size: 14px; color: #999;">
+            <p>Thanks,<br>The Robotic Club Team</p>
+        </div>
+    </div>
+'''
+
+        email = EmailMessage(subject, html_message, settings.DEFAULT_FROM_EMAIL, [to_email])
+        email.content_subtype = "html"  # Important: this tells Django it's an HTML email
+        email.send()
         return "OK"
     except Exception as e:
         return f'NOTOK {str(e)}'
+
 
 
 
