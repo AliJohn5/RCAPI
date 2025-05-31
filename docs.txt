@@ -1,0 +1,657 @@
+RUN:
+    sudo docker run --rm -p 6379:6379 redis:7
+    python3 manage.py runserver
+    lt --subdomain robotic-club --port 8000
+    sudo service redis-server start
+
+doaminname:
+    unknown
+
+replace 127.0.0.1:8000 with doamin_name
+
+Http request:
+    http://{doaminname}/{APP}/{urls}
+
+authtype:
+    TokenAuthentication: {token}
+    BasicAuthentication: {email,password}
+
+
+APP : auth/
+    urls:
+        register/
+            method: POST,
+            authtype: no auth,
+            permissions: Any,
+            data: {email, first_name, last_name, password},
+            response: {email, id},
+            code: 201,
+            describtion: create user without any permissions [it can't log in now],
+            example: curl -X POST   http://localhost:8000/auth/register/  -H "Content-Type: application/json" -d '{"first_name" : "Ali" , "last_name" : "John", "email" : "hi@gmail.com","password" : "strongpass"}'
+            response_example: {"id":24,"email":"hi@gmail.com"}
+
+        getregister/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: [register],
+            data: ,
+            response: {id : email},
+            code: 200,
+            describtion: return users that don't have permission to log in,
+            example:  curl -X POST   http://localhost:8000/auth/getregister/   -H "Content-Type: application/json" -H 'Authorization: Token f13561e76fb3820be6fe120fb95f78c8aef894b2',
+            response_example: {"19":"t0t01@example.com","20":"test@gmail.com"},
+
+        acceptregister/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: [register],
+            data: {email},
+            response: user,
+            code: 200,
+            describtion: give login permission to user,
+            example:  curl -X POST   http://localhost:8000/auth/acceptregister/   -H "Content-Type: application/json" -H 'Authorization: Token f13561e76fb3820be6fe120fb95f78c8aef894b2' -d '{"email" : "test@gmail.com"}',
+            response_example: {"email":"test@gmail.com","first_name":"","last_name":"","permissions":[{"id":1,"permission":"login","description":"User with this permission can log in"}],"image":null},
+
+        list/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: [list-users],
+            data: ,
+            response: all users [user1 ,user2 ..],
+            code: 200,
+            describtion: return all users with data about them,
+            example: curl -X POST   http://localhost:8000/auth/list/   -H "Content-Type: application/json" -H 'Authorization: Token f13561e76fb3820be6fe120fb95f78c8aef894b2'
+            response_example: [{"email":"test6800@example.com","first_name":"John","last_name":"Doe","permissions":[{"id":1,"permission":"login","description":"User with this permission can log in"}],"image":null}, ..... ]
+
+        login/
+            method: POST,
+            authtype: BasicAuthentication,
+            permissions:[login],
+            data: {email,password},
+            response: {token,id},
+            code: 200,
+            describtion: login to get the token or update token,
+            example: curl -X POST   http://localhost:8000/auth/login/  -u aliy65154@gmail.com:123456 -H "Content-Type: application/json" -d '{"email" : "aliy65154@gmail.com" , "password" : "123456"}',
+            response_example: {"token":"f13561e76fb3820be6fe120fb95f78c8aef894b2","id":21},
+
+        gencode/
+            method: POST,
+            authtype: ,
+            permissions: Any,
+            data: {email},
+            response: ,
+            code: 200,
+            describtion: send code to the provided email,
+            example: curl -X POST   http://localhost:8000/auth/gencode/   -H "Content-Type: application/json" -H 'Authorization: Token f13561e76fb3820be6fe120fb95f78c8aef894b2' -d '{"email":"aliy65154@gmail.com"} ',
+            response_example: empty [email received : "Your code for Robotic Club is: lKYd3Yxflj"],
+
+        forgetpass/
+            method: POST,
+            authtype: ,
+            permissions: Any,
+            data: {email,password,code},
+            response: ,
+            code: 200,
+            describtion: change password for provided email [token changed],
+            example: curl -X POST   http://localhost:8000/auth/forgetpass/   -H "Content-Type: application/json" -d '{"email":"aliy65154@gmail.com","password":"123ali123","code" : "lKYd3Yxflj"} ',
+            response_example: empty,
+
+        upload-user-image/<int:id>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,isowner},
+            data: {image},
+            response: user,
+            code: 200,
+            describtion: change the profile picture,
+            example:  curl -X POST   http://localhost:8000/auth/upload-user-image/23   -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62'   -F 'image=@/home/alijohn/Pictures/Screenshots/hi.png',
+            response_example: {"id":23,"email":"amin20haydar@gmail.com","image":"http://localhost:8000/photos/24/08/26/hi.png","image_url":"http://localhost:8000/photos/24/08/26/hi.png"},
+
+        get-user-image/<int:id>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: login,
+            data: ,
+            response: user,
+            code: 200,
+            describtion: return user,
+            example: curl -X POST   http://localhost:8000/auth/get-user-image/23   -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+            response_example: {"id":23,"email":"amin20haydar@gmail.com","image":"http://localhost:8000/photos/24/08/26/hi.png","image_url":"http://localhost:8000/photos/24/08/26/hi.png"},
+        
+        upgrade/<str:email>/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,upgarde},
+            data: {per : ["per1","per2"] },
+            response: ,
+            code: 200,
+            describtion: give permission to user,
+            example: curl -X POST http://localhost:8000/auth/upgrade/hi@gmail.com -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62' -H 'Content-Type: application/json' -d '{"per" : ["login","register"]}'
+            response_example: 
+        
+        downgrade/<str:email>/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,downgrade},
+            data: {per : ["per1","per2"] },
+            response: ,
+            code: 200,
+            describtion: remove permission to user,
+            example: curl -X POST http://localhost:8000/auth/downgarde/hi@gmail.com -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62' -H 'Content-Type: application/json' -d '{"per" : ["login","register"]}'
+            response_example: 
+
+        write-per/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,write-per},
+            data: {permission,description},
+            response: permission,
+            code: 200,
+            describtion: create permission,
+            example:  curl -X POST http://localhost:8000/auth/write-per/ -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62' -H 'Content-Type: application/json' -d '{"permission" : "test" , "description" : "test"}'
+            response_example: {"id":19,"permission":"test","description":"test"}
+
+        read-per/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-per},
+            data: ,
+            response: permissions,
+            code: 200,
+            describtion: return all permission,
+            example:  curl -X POST http://localhost:8000/auth/read-per/ -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62' -H 'Content-Type: application/json'
+            response_example: [{"id":1,"permission":"login","description":"User with this permission can log in"},{"id":2,"permission":"read-per","description":"User with this permission can read all permissions"},{"id":3,"permission":"write-per","description":"User with this permission can write (edit or add) permissions"},{"id":4,"permission":"upgrade","description":"User with this permission can upgrade other Users ( give them permissions)"},{"id":5,"permission":"downgrade","description":"User with this permission can downgrade other Users ( remove permissions from them)"},{"id":6,"permission":"register","description":"User with this per can accept users to data base and give them login per"},{"id":7,"permission":"read-closet","description":"user with this permission can read closets"},{"id":8,"permission":"write-closet","description":"user with this permission can make a new closet, or edit it"} ..
+
+
+APP : store
+    urls:
+        closets/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-closet},
+            data: ,
+            response: [closet1,closet2],
+            code: 200,
+            describtion: return all closets,
+            example: curl -X POST   http://localhost:8000/store/closets/ -H "Content-Type: application/json"  -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+            response_example: [{"id":1,"name":"1","number_of_some_things":0},{"id":2,"name":"2","number_of_some_things":0},{"id":3,"name":"3","number_of_some_things":0},{"id":4,"name":"4","number_of_some_things":0}],
+
+        closets/<int:pk>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-closet},
+            data: ,
+            response: closet,
+            code: 200,
+            describtion: return closet with provided id,
+            example:  curl -X POST   http://localhost:8000/store/closets/1 -H "Content-Type: application/json"  -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+            response_example: {"id":1,"name":"1","number_of_some_things":0},
+
+        mytypes/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-mytype},
+            data: ,
+            response: {mytypes1,mytypes2},
+            code: 200,
+            describtion: return all mytypes,
+            example:  curl -X POST   http://localhost:8000/store/mytypes/ -H "Content-Type: application/json"  -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+            response_example: [{"id":1,"name":"arduino","number_of_some_things":0},{"id":2,"name":"DC-MOTOR","number_of_some_things":0},{"id":3,"name":"Driver","number_of_some_things":0},{"id":4,"name":"computer","number_of_some_thi......}],
+
+        mytypes/<int:pk>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-mytype},
+            data: ,
+            response: mytypes,
+            code: 200,
+            describtion: return closet with provided id,
+            example: curl -X POST   http://localhost:8000/store/mytypes/1 -H "Content-Type: application/json"  -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+            response_example: {"id":1,"name":"arduino","number_of_some_things":0},
+
+        projects/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-proj},
+            data: ,
+            response: {proj1 ,proj2},
+            code: 200,
+            describtion: return all projects,
+            example: curl -X POST   http://localhost:8000/store/projects/ -H "Content-Type: application/json"  -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+            response_example: [{"pk":17,"name":"Dual Arms","workers":[{"email":"aliy65154@gmail.com","first_name":"","last_name":"","permissions":[{"id":1,"permission":"login","description":"User with this permission can log in"},{"id":2,"permission":"read-per","description":"User with this permission can read all permissions"},{"id":3,"permission":"write-per","description":"User with this permission can write (edit or add) permissions"},{"id":4,"permission":"upgrade","description":"User with this permission can upgrade other Users ( give them permissions)"},..]}]}],
+
+        projects/<int:pk>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-proj},
+            data: ,
+            response: proj1,
+            code: 200,
+            describtion: return project with provided id,
+            example:  curl -X POST   http://localhost:8000/store/projects/17  -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+            response_example: {"pk":17,"name":"Dual Arms","workers":[{"email":"aliy65154@gmail.com","first_name":"","last_name":"","permissions":[{"id":1,"permission":"login","description":"User with this permission can log in"},{"id":2,"permission":"read-per","description":"User with this permission can read all permissions"},{"id":3,"permission":"write-per","description":"User with this permission can write (edit or add) permissions"},{"id":4,"permission":"upgrade","description":"User with this permission can upgrade other Users ( give them permissions)"},{"id":5,"permission":"downgrade","description":"User with this permission can downgrade other Users ( remove permissions from them)"},{"id":6,"permission":"register","description":"User with this per can accept users to data base and give them login per"},{"id":7,"permission":"read-closet","description":"user with this permission can read closets"},{"id":8,"permission":"write-closet","description":"user with this permission can make a new closet, or edit it"},{"id":9,"permission":"read-mytype","description":"user with this permission can read types"},{"id":10,"permission":"write-mytype","description":"user with this permission can write types"},{"id":11,"permission":"read-proj","description":"user with this permission can read projects"},{"id":12,"permission":"write-proj","description":"user with this permission can write projects"},{"id":13,"permission":"read-some-thing","description":"user with this permission can read public some thing"},{"id":14,"permission":"read-private-some-thing","description":"user with this permission can read private some things"},{"id":15,"permission":"write-some-thing","description":"user with this permission can write some thing"},{"id":16,"permission":"read-borrow","description":"users with this Permission can read borrow things from RC"},{"id":17,"permission":"write-borrow","description":"user can borrow, or edit, or delete"},{"id":18,"permission":"list-users","description":"users with this permission can get all user data"}],"image":null}],"completion_rate":75,"number_of_some_things":0,"image":"/photos/24/08/25/hi_h5ePQIK.png"},
+
+        somethings/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-some-thing},
+            data: ,
+            response: {somethings1,somethings2},
+            code: 200,
+            describtion: return all somethings (only public),
+            example: curl -X POST   http://localhost:8000/store/somethings/  -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+            response_example: [{"pk":1,"name":"arduino uno","closet":{"id":1,"name":"1","number_of_some_things":0},"isActive":true,"mytype":{"id":1,"name":"arduino","number_of_some_things":0},"project":{"pk":17,"name":"Dual Arms","workers":[{"email":"aliy65154@gmail.com","first_name":"","last_name":"","permissions":[{"id":1,"permission":"login","description":"User with this permission can log in"},{"id":2,"permission":"read-per","description":"User with this permission can read all permissions"},{"id":3,"permission":"write-per","description":"User with th...,
+
+        somethings/<int:pk>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-some-thing},
+            data: ,
+            response: somethings,
+            code: 200,
+            describtion: return something with provided id only public,
+            example: curl -X POST   http://localhost:8000/store/somethings/1 -H "Content-Type: application/json"  -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+            response_example: {"pk":1,"name":"arduino uno","closet":{"id":1,"name":"1","number_of_some_things":0},"isActive":true,"mytype":{"id":1,"name":"arduino","number_of_some_things":0},"project":{"pk":17,"name":"Dual Arms","workers":[{"email":"aliy65154@gmail.com","first_name":"","last_name":"","permissions":[{"id":1,"permission":"login","description":"User with this permission can log in"},{"id":2,"permission":"read-per","description":"User with this permission can read all permissions"},{"id":3,"permission":"write-per","description":"User with this permission can write (edit or add) permissions"},{"id":4,"permission":"upgrade","description":"User with this permission can upgrade other Users ( give them permissions)"},{"id":5,"permission":"downgrade","description":"User with this permission can downgrade other Users ( remove permissions from them)"},{"id":6,"permission":"register","descriptio....,
+
+        somethingsp/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-private-some-thing},
+            data: ,
+            response: {privateSomething1,privateSomething2..},
+            code: 200,
+            describtion: return all somethings,
+            example: same as somethings,
+            response_example: same as somethings,
+
+        somethingsp/<int:pk>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-private-some-thing},
+            data: ,
+            response: privateSomething,
+            code: 200,
+            describtion: return private something with provided id,
+            example: same as somethings,
+            response_example: same as somethings,
+***
+        create_closet/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,write-closet},
+            data: {name,number_of_some_things},
+            response: closet,
+            code: 201,
+            describtion: create closet,
+            example:  curl -X POST   http://localhost:8000/store/create_closet/   -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62' -d '{"name":"10" , "number_of_some_things" : 0} ',
+            response_example: {"id":5,"name":"10","number_of_some_things":0},
+
+        create_mytype/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,write-mytype},
+            data: {name,number_of_some_things},,
+            response: mytype,
+            code: 201,
+            describtion: create mytype,
+            example:  curl -X POST   http://localhost:8000/store/create_mytype/   -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62' -d '{"name":"motor" , "number_of_some_things" : 0} ',
+            response_example: {"id":5,"name":"motor","number_of_some_things":0},
+
+        create_proj/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,write-proj},
+            data: {name,workers[emails],completion_rate,number_of_some_things},
+            response: project,
+            code: 201,
+            describtion: create project,
+            example: curl -X POST   http://localhost:8000/store/create_proj/   -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62' -d '{"name":"Dron" , "workers" : [ "aliy65154@gmail.com" ] , "completion_rate" : 50 , "number_of_some_things" : 10} ',
+            response_example: {"pk":46,"name":"Dron","workers":[{"email":"aliy65154@gmail.com","first_name":"","last_name":"","permissions":[{"id":1,"permission":"login","description":"User with this permission can log in"},{"id":2,"permission":"read-per","description":"User with this permission can read all permissions"},{"id":3,"permission":"write-per","description":"User with this permission can write (edit or add) permissions"},{"id":4,"permission":"upgrade","description":"User with this permission can upgrade other Users ( give them permissions)"},{"id":5,"permission":"downgrade","description":"User with this permission can downgrade other Users ( remove permissions from them)"},{"id":6,"permission":"register","description":"User with this per can accept users to data base and give them login per"},{"id":7,"permission":"read-closet","description":"user with this permission can read closets"},{"id":8,"permission":"write-closet","description":"user with this permission can make a new closet, or edit it"},{"id":9,"permission":"read-mytype","description":"user with this permission can read types"}....,
+
+        create_thing/
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,write-some-thing},
+            data:{name,closet_id,isActive,mytype_id,project_id,isPrivate,borrowed} ,
+            response: something,
+            code: 201,
+            describtion: create something,
+            example:  curl -X POST   http://localhost:8000/store/create_thing/   -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62' -d '{"name":"arduino board" , "closet": 1 , "isActive" : true , "mytype" : 1, "project" :  46, "isPrivate" : false , "borrowed" : false } ',
+            response_example: {"pk":19,"name":"arduino board","closet":{"id":1,"name":"1","number_of_some_things":0},"isActive":true,"mytype":{"id":1,"name":"arduino","number_of_some_things":0},"project":{"pk":46,"name":"Dron","workers":[{"email":"aliy65154@gmail.com","first_name":"","last_name":"","permissions":[{"id":1,"permission":"login","description":"User with this permission can log in"},{"id":2,"permission":"read-per","description":"User with this permission can read all permissions"},{....,
+
+        edit_closet/<int:pk>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login, write-closet},
+            data: same as create,
+            response: same as create,
+            code: 200,
+            describtion: edit closet with id = pk,
+            example: curl -X POST   http://localhost:8000/store/edit_closet/1   -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62' -d '{"name":"11" , "number_of_some_things" : 0} ',
+            response_example: {"id":1,"name":"11","number_of_some_things":0},
+
+        edit_mytype/<int:pk>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login, write-mytype},
+            data: same as create,
+            response: same as creat,
+            code: 200,
+            describtion: edit mytype with id = pk,
+            example: curl -X POST   http://localhost:8000/store/edit_mytype/1   -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62' -d '{"name":"11" , "number_of_some_things" : 0}',
+            response_example: {"id":1,"name":"11","number_of_some_things":0},
+
+        edit_proj/<int:pk>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,write-proj},
+            data: {completion_rate,name,number_of_some_things,workers : [emails]},
+            response: proj,
+            code: 200,
+            describtion: return edited proj,
+            example: curl -X POST   http://localhost:8000/store/edit_proj/17   -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62' -d '{"name":"11" ,"workers" : [ "aliy65154@gmail.com" ] ,"number_of_some_things" : 0 , "completion_rate" : 55 } ',
+            response_example: "pk":17,"name":"11","workers":[{"email":"aliy65154@gmail.com","first_name":"","last_name":"","permissions":[{"id":1,"permission":"login","description":"User with this permission can log in"},{"id":2,"permission":"read-per","description":"User with this permission can read all permissions"},{"id":3,"permission":"write-per","description":"User with this permission can write (edit or add) permissions"},{"id":4,"permission":"upgrade","description":"User with this permission can upgrade other Users ( give them permissions)"},{"id":5,"permission":"downgrade","description":"User with this permission can downgrade other Users ( remove permissions from them)"},{"id":6,"permission":"register","description":..,
+
+        edit_thing/<int:pk>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,write-some-thing},
+            data: {name,isActive= bool,isPrivate= bool,borrowed = bool,mytype = id,project= id,closet=id},
+            response: something,
+            code: 200,
+            describtion: edit something with id = pk,
+            example: curl -X POST   http://localhost:8000/store/edit_thing/1   -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62' -d '{"name":"11" ,"isActive" : true ,"isPrivate" : false , "borrowed" : true , "mytype" : 1, "project" : 17 , "closet" : 1 } ',
+            response_example: {"pk":1,"name":"11","closet":{"id":1,"name":"11","number_of_some_things":0},"isActive":true,"mytype":{"id":1,"name":"11","number_of_some_things":0},"project":{"pk":17,"name":"11","workers":[{"email":"aliy65154@gmail.com","first_name":"","last_name":"","permissions":[{"id":1,"permission":"login","description":"User with this permission can log in"},{"id":2,"permission":"read-per","description":"User with this permission can read all permissions"},{"id":3,"permission":"write-per","description":"User with this permission can write (edit or add) permissions"},{"id":4...,
+
+        delete_closet/<int:pk>
+            method: DELETE,
+            authtype: TokenAuthentication,
+            permissions: {login,write-closet},
+            data: ,
+            response: ,
+            code: 200,
+            describtion: delete object with id = pk,
+            example: curl -X DELETE   http://localhost:8000/store/delete_closet/1   -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+            response_example: ,
+
+        delete_mytype/<int:pk>
+            method: DELETE,
+            authtype: TokenAuthentication,
+            permissions: {login,write-mytype},
+            data: ,
+            response: ,
+            code: ,
+            describtion: ,
+            example: ,
+            response_example: ,
+
+        delete_proj/<int:pk>
+            method: DELETE,
+            authtype: TokenAuthentication,
+            permissions: {login,proj},
+            data: ,
+            response: ,
+            code: ,
+            describtion: ,
+            example: ,
+            response_example: ,
+
+        delete_thing/<int:pk>
+            method: DELETE,
+            authtype: TokenAuthentication,
+            permissions: {login,write-thing},
+            data: ,
+            response: ,
+            code: ,
+            describtion: ,
+            example: ,
+            response_example: ,
+
+        related_closet/<int:pk>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-closet},
+            data: ,
+            response: {something},
+            code: 200,
+            describtion: return all something in closet with id = pk,
+            example: curl -X POST   http://localhost:8000/store/related_closet/2 -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+            response_example: [{"pk":19,"name":"arduino board","closet":{"id":2,"name":"2","number_of_some_things":0},"isActive":true,"mytype":{"id":4,"name":"computer","number_of_some_things":0},"project":{"pk":46,"name":"Dron","workers":[{"email":"aliy65154@gmail.com","first_name":"","last_name":"","permissions":[{"id":1,"permission":"login","description":"User with this permission can log in"},{"id":2,"permission":"read-per","description":"User with this permission can read all permissions"},{"id":3,"permission":"write-per","description":"User with this permission can write (edit or add) permissions"},{"id":4,"permission":"upgrade","description":"User with this permission can upgrade other Users ( give them permissions)"},{"id":5,"permission":"downgrade","description":"..,
+
+        related_mytype/<int:pk>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-mytype},
+            data: ,
+            response: {somethings},
+            code: 200,
+            describtion: return all something with type id pk,
+            example: curl -X POST   http://localhost:8000/store/related_mytype/4 -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+            response_example: [{"pk":19,"name":"arduino board","closet":{"id":2,"name":"2","number_of_some_things":0},"isActive":true,"mytype":{"id":4,"name":"computer","number_of_some_things":0},"project":{"pk":46,"name":"Dron","workers":[{"email":"aliy65154@gmail.com","first_name":"","last_name":"","permissions":[{"id":1,"permission":"login","description":"User with this permission can log in"},{"id":2,"permission":"read-per","description":"User with this permission can read all permissions"},{"id":3,"permission":"write-per","description":"User with this permission can write (edit or add) permissions"},{"id":4,"permission":"upgrade","description":"User with this permission can upgrade other Users ( give them permissions)"},{"id":5,"permission":"downgrade","description":"User with this permission can downgrade other Users ( remove permissions from them)"},{"id":6,"permission":"register","description":"User with this per can accept users to data base and give them login per"},{"id":7,"permission"....,
+
+        related_proj/<int:pk>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login},
+            data: ,
+            response: ,
+            code: ,
+            describtion: ,
+            example: ,
+            response_example: ,
+
+        related_user/<str:email>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login},
+            data: ,
+            response: ,
+            code: ,
+            describtion: return all projects for user with email provided in url,
+            example: ,
+            response_example: ,
+
+        upload-project-image/<int:id>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,write-proj},
+            data: ,
+            response: ,
+            code: 200,
+            describtion: ,
+            example: curl -X POST   http://localhost:8000/store/upload-project-image/46   -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62'   -F 'image=@/home/alijohn/Pictures/Screenshots/h2.png',
+            response_example: {"id":46,"name":"Dron","image":"http://localhost:8000/photos/24/08/29/h2.png","image_url":"http://localhost:8000/photos/24/08/29/h2.png"},
+
+        get-project-image/<int:id>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login,read-proj},
+            data: ,
+            response: image_url,
+            code: 200,
+            describtion: ,
+            example: curl -X POST   http://localhost:8000/store/get-project-image/46 -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+            response_example: {"id":46,"name":"Dron","image":"http://localhost:8000/photos/24/08/29/hi.png","image_url":"http://localhost:8000/photos/24/08/29/hi.png"},
+
+        upload-something-image/<int:id>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login},
+            data: ,
+            response: ,
+            code: ,
+            describtion: ,
+            example: ,
+            response_example: ,
+
+        get-something-image/<int:id>
+            method: POST,
+            authtype: TokenAuthentication,
+            permissions: {login},
+            data: ,
+            response: ,
+            code: ,
+            describtion: ,
+            example: ,
+            response_example: ,
+
+
+
+
+APP : utils
+    borrow/
+        method: POST,
+        authtype: TokenAuthentication,
+        permissions: {login,read-borrow},
+        data:,
+        response: {borrows},
+        code: 200,
+        describtion: return all borrow,
+        example:  curl -X POST   http://localhost:8000/utils/borrow/ -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62',
+        response_example: {"pk":7,"person":[{"email":"aliy65154@gmail.com","first_name":"","last_name":"","permissions":[{"id":1,"permission":"login","description":"User with this permission can log in"},{"id":2,"permission":"read-per","description":"User with this permission can read all permissions"},{"id":3,"permission":"write-per","description":"User with this permission can write (edit or add) permissions"},{"id":4,"permission":"upgrade","description":"User with this permission can upgrade other Users ( give them permissions)"},{"id":5,"permission":"downgrade","description":"User with this permission can downgrade other Users ( remove permissions from them)"},{"id":6,"permission":"register","description":"User with this per can accept users t..,
+
+    borrow/returned/
+        method: POST,
+        authtype: TokenAuthentication,
+        permissions: {login},
+        data: ,
+        response: ,
+        code: ,
+        describtion: same as the brevious but it return only returned borrow,
+        example: ,
+        response_example: ,
+
+    borrow/available/
+        method: POST,
+        authtype: TokenAuthentication,
+        permissions: {login},
+        data: ,
+        response: ,
+        code: ,
+        describtion: same as previous but return not returned borrow,
+        example: ,
+        response_example: ,
+
+    borrow/<int:pk>
+        method: POST,
+        authtype: TokenAuthentication,
+        permissions: {login},
+        data: ,
+        response: ,
+        code: ,
+        describtion:return on borrow with id = pk ,
+        example: ,
+        response_example: ,
+
+    borrow/return/<int:pk>
+        method: POST,
+        authtype: TokenAuthentication,
+        permissions: {login},
+        data: ,
+        response: ,
+        code: ,
+        describtion: make borrow with id = pk as return,
+        example: ,
+        response_example: ,
+
+    borrow/create/
+        method: POST,
+        authtype: TokenAuthentication,
+        permissions: {login},
+        data: {person:email, something:id},
+        response: ,
+        code: 201,
+        describtion: create a borrow,
+        example: curl -X POST   http://localhost:8000/utils/borrow/create/ -H "Content-Type: application/json" -H 'Authorization: Token 46be2de4105fa3cd7b9e45a4f1d89bbd6cd83e62'  -d '{"something" : 4 , "person" : "aliy65154@gmail.com" }',
+        response_example: ,
+
+    borrow/delete/<int:pk>
+        method: DELETE,
+        authtype: TokenAuthentication,
+        permissions: {login},
+        data: ,
+        response: ,
+        code: 200,
+        describtion: ,
+        example: ,
+        response_example: ,
+
+
+
+
+
+APP : chat
+    groups/
+        method: POST,
+        authtype: TokenAuthentication,
+        permissions: {login},
+        data: ,
+        response: ,
+        code: 200,
+        describtion: return all groups that the user is member in,
+        example: ,
+        response_example: ,
+
+    groups/<str:room_name>/
+        method: POST,
+        authtype: TokenAuthentication,
+        permissions: {login},
+        data: ,
+        response: ,
+        code: 200,
+        describtion: return group with name room_name if user is member in,
+        example: ,
+        response_example: ,
+        
+    <str:room_name>/<int:i1>/<int:i2>
+        method: POST,
+        authtype: TokenAuthentication,
+        permissions: {login},
+        data: ,
+        response: ,
+        code: 200,
+        describtion: return messages from index i1 to i2 in group "room_name",
+        example: ,
+        response_example: ,
+        
+    groups-create/
+        method: POST,
+        authtype: TokenAuthentication,
+        permissions: {login,create-group},
+        data: {name,members[emails]},
+        response: ,
+        code: 200,
+        describtion: creat group,
+        example: ,
+        response_example: ,
+        
+    groups-update/<str:name>
+        method: POST,
+        authtype: TokenAuthentication,
+        permissions: {login,create-group},
+        data: {name,members[emails]},,
+        response: ,
+        code: 200,
+        describtion: update group with name "name",
+        example: ,
+        response_example: ,
+        
+    groups-delete/<str:name>
+        method: DELETE,
+        authtype: TokenAuthentication,
+        permissions: {login},
+        data: ,
+        response: ,
+        code: 200,
+        describtion: ,
+        example: ,
+        response_example: ,
+
+
+for web socket connection:
+url: ws://127.0.0.1:8000/ws/chat/groups/<group_name>/
+headers: "Authorization: Token 4f742684928d6074143ac80f25d8b888ea69671b"
+if you are not a member in group_name you will get 403 error, but when the connection accepted:
+{
+    'message' : 'Hello world'
+}

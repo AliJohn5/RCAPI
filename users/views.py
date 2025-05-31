@@ -1,0 +1,272 @@
+import os
+from django.shortcuts import get_object_or_404
+from rest_framework.decorators import api_view,permission_classes,authentication_classes
+from rest_framework.response import Response
+from .serializers import RCUserSerializer
+from .permissions import HasPermission
+from rest_framework import status
+from .models import *
+from .serializers import *
+from rest_framework.authentication import TokenAuthentication, BasicAuthentication
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.permissions import  AllowAny
+from rest_framework.views import APIView
+import random,string
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db.models import Q
+from rest_framework.permissions import  IsAuthenticated,AllowAny
+from django.core.files.uploadedfile import UploadedFile
+
+def generate_random_string(length=10):
+    letters = string.ascii_letters + string.digits
+    return ''.join(random.choice(letters) for i in range(length))
+
+def send_code_email(to_email,code):
+    try:
+        subject = 'Robotic Club Code'
+        message = 'Your reset code for Robotic Club is: ' + code
+        from_email = settings.DEFAULT_FROM_EMAIL
+        recipient_list = [to_email]
+        print(send_mail(subject, message, from_email, recipient_list))
+        return "OK"
+    except Exception as e:
+        return f'NOTOK {str(e)}'
+
+
+
+@api_view(['POST'])
+@permission_classes([HasPermission("register")])
+@authentication_classes([TokenAuthentication])
+def accept_register(request): 
+    login_permission = get_object_or_404( Permission, permission='login')
+    user = get_object_or_404(RCUser,email = request.data['email'])
+    
+    user.permissions.add(login_permission)
+    user.save()
+    serializer = RCUserSerializer(user)
+    
+    
+    return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+
+
+@api_view(['POST'])
+@permission_classes([HasPermission("register")])
+@authentication_classes([TokenAuthentication])
+def get_register(request):
+    loginper = Permission.objects.get(permission = 'login')
+    users = RCUser.objects.filter(~Q(permissions = loginper))
+    emails = { }
+    for user in users:
+        emails[user.id] = user.email
+    return Response(emails, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([HasPermission("list-users")])
+@authentication_classes([TokenAuthentication])
+def get_users(request):
+    users = RCUser.objects.all()
+    ser = RCUserSerializer(users, many = True)
+    return Response(ser.data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def RegisterView(request):
+    data = request.data
+    data['permissions'] = []
+    serializer = RCUserSerializer(data=data)
+    
+    if serializer.is_valid():
+        user = serializer.save()
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'id': user.pk,
+            'email': user.email
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+class Login(ObtainAuthToken):
+    serializer_class = CustomAuthTokenSerializer
+    def post(self, request, *args, **kwargs):
+        
+        serializer = self.serializer_class(data=request.data,
+                                           context={'request': request})
+        
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        
+        if not user.permissions.filter(permission='login').exists():
+            return Response({"details":"Please visit Robotic Club in Latakia university, to confirm your account.\nYou can't login now!!"},status=status.HTTP_401_UNAUTHORIZED)
+
+        
+        token = Token.objects.filter(user = user)
+        if(token): token.delete()
+        
+
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'access_token': token.key,
+            'id': user.pk,
+            'first_name':user.first_name,
+            'last_name':user.last_name,
+            'phone_number':user.phone_number,
+            'image_url':user.image.url if user.image else "No"
+        },status=status.HTTP_200_OK)
+    
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def GenerateCodeView(request):
+    user = RCUser.objects.get(email = request.data['email'])
+    if(user):
+        oldcode = Code.objects.filter(user=user)
+        for obj in oldcode:
+            obj.delete()
+        
+        code = Code.objects.create(
+            code = generate_random_string(10),
+            user = user
+        )
+        if(send_code_email(request.data['email'],code=code.code) == "OK"):
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(  data={'details' : 'cant send email'},status=status.HTTP_400_BAD_REQUEST)
+    else:
+        return Response( status=status.HTTP_404_NOT_FOUND)
+    
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def ForgetPasswordView(request):
+    user = RCUser.objects.get(email = request.data['email'])
+    newpassword =  request.data['password']
+    realcode = Code.objects.get(user=user).code
+    reccode = request.data['code']
+
+    if(user):
+        if(realcode != reccode):
+            return Response( data={'details' : 'wrong code'},status=status.HTTP_401_UNAUTHORIZED)
+        user.set_password(newpassword)
+        user.save()
+        obj = get_object_or_404(Code,user = user)
+        obj.delete()
+
+        return Response(status=status.HTTP_200_OK)
+        
+    else:
+        return Response( status=status.HTTP_404_NOT_FOUND)
+    
+
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, HasPermission("login")])
+@authentication_classes([TokenAuthentication])
+def upload_user_image(request):
+    user = request.user
+
+    # Delete old image if exists
+    if user.image and user.image.name and os.path.isfile(user.image.path):
+        os.remove(user.image.path)
+
+    serializer = RCuserImageSerializer(user, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+
+        # Safe access to image URL
+        image_url = user.image.url if user.image and user.image.name else None
+        return Response({'image_url': image_url}, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, HasPermission("login")])
+@authentication_classes([TokenAuthentication])
+def get_user_image(request, email):
+    try:
+        project = RCUser.objects.get(email=email)
+    except RCUser.DoesNotExist:
+        return Response({"error": "user not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = RCuserImageSerializer(project,context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated, HasPermission("login")])
+@authentication_classes([TokenAuthentication])
+def modify_user_data(request):
+    user = request.user
+    seri = RCUserSerializer(user,data=request.data, partial=True)
+    if seri.is_valid():
+        seri.save()
+        return Response(status=status.HTTP_200_OK)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, HasPermission("upgrade"),HasPermission("login")])
+@authentication_classes([TokenAuthentication])
+def upgarde_user(request, email):
+    user = get_object_or_404(RCUser,email = email)
+    perm = []
+    for item in request.data['per']:
+       perm.append( get_object_or_404(Permission,permission = item) )
+
+    for item in perm:
+        user.permissions.add(item)
+    
+    user.save()
+    return Response( status=status.HTTP_200_OK)
+    
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, HasPermission("upgrade"), HasPermission("login")])
+@authentication_classes([TokenAuthentication])
+def downgrade_user(request, email):
+    user = get_object_or_404(RCUser,email = email)
+    perm = []
+    for item in request.data['per']:
+       perm.append( get_object_or_404(Permission,permission = item) )
+
+    for item in perm:
+        user.permissions.remove(item)
+    
+    user.save()
+    return Response( status=status.HTTP_200_OK)
+    
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, HasPermission("write-per"), HasPermission("login")])
+@authentication_classes([TokenAuthentication])
+def write_per(request):
+    per = PermissionSerializer(data = request.data)
+    if(per.is_valid()):
+        per.save()
+        return Response(data=per.data, status=status.HTTP_200_OK)
+    else:
+        return Response( status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, HasPermission("read-per"), HasPermission("login")])
+@authentication_classes([TokenAuthentication])
+def read_per(request):
+    per = PermissionSerializer(Permission.objects.all(),many = True)
+    return Response(data=per.data, status=status.HTTP_200_OK)
+
+    
+
