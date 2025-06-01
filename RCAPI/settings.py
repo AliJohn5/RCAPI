@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-o49k%te#0n%&(^vpilpc-c0q6-x7%atju1*!u^=ahzn#*c^tww
 
 # SECURITY WARNING: don't run with debug turned on in production!
 #DEBUG = os.getenv("DEBUG", "False") == "True"
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['https://rcapi.onrender.com','rcapi.onrender.com']
 
