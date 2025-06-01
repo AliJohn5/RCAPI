@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
-
+from botocore.config import Config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,41 +28,65 @@ DEFENDER_REDIS_URL= os.getenv("REDIS_URL", "redis://localhost:6379/0")
 SECRET_KEY = 'django-insecure-o49k%te#0n%&(^vpilpc-c0q6-x7%atju1*!u^=ahzn#*c^tww'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "False") == "True"
-
+#DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = True
 
 ALLOWED_HOSTS = ['https://rcapi.onrender.com','rcapi.onrender.com']
 
-CSRF_TRUSTED_ORIGINS = ['https://rcapi.onrender.com','rcapi.onrender.com']
+if(DEBUG):
+    ALLOWED_HOSTS += '*'
+
+CSRF_TRUSTED_ORIGINS = ['https://rcapi.onrender.com']
 
 ASGI_APPLICATION = "RCAPI.asgi.application"
-#CHANNEL_LAYERS = {
-#    "default": {
-#        "BACKEND": "channels_redis.core.RedisChannelLayer",
-#        "CONFIG": {
-#            "hosts": [("127.0.0.1", 6379)],
-#        },
-#    },
-#}
-
-
-B2_BUCKET_NAME = "RoboticAliJohn"
-B2_KEY_ID = "005465b41db24b70000000001"
-B2_APPLICATION_KEY = "K005y+Hdjl2zHdcsD2BYJNUFUlQYFvw"
-
 
 CHANNEL_LAYERS = {
+}
+
+if(DEBUG):
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [("127.0.0.1", 6379)],
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [os.environ.get("REDIS_URL", "redis://localhost:6379")],
         },
     },
+    }
+#DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+# File storage configuration
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
 }
 
-# Application definition
+
+
+# Backblaze B2 Configuration
+AWS_ACCESS_KEY_ID = '005465b41db24b70000000002'  # Backblaze keyID
+AWS_SECRET_ACCESS_KEY = 'K005O06q00QVOdL12s5phl0TBTZdxl4'  # Backblaze applicationKey
+AWS_STORAGE_BUCKET_NAME = 'RoboticAliJohn'
+AWS_S3_REGION_NAME = 'us-east-005'
+AWS_DEFAULT_ACL = None
+AWS_QUERYSTRING_AUTH = True
+AWS_S3_ENDPOINT = f's3.{AWS_S3_REGION_NAME}.backblazeb2.com'
+AWS_S3_ENDPOINT_URL = f'https://{AWS_S3_ENDPOINT}'
+
 
 INSTALLED_APPS = [
+    'storages',
     'chat',
     'daphne',
     'django.contrib.admin',
@@ -78,7 +102,6 @@ INSTALLED_APPS = [
     'store',
     'utils',
     'defender',
-    'storages',
 
 ]
 AUTH_USER_MODEL = 'users.RCUser'
@@ -208,9 +231,8 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Media files (user uploads)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+#MEDIA_URL = '/media/'
+#MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-DEFAULT_FILE_STORAGE = 'RCAPI.storage_backends.B2PrivateMediaStorage'
+#STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

@@ -1,4 +1,5 @@
 import os
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view,permission_classes,authentication_classes
 from rest_framework.response import Response
@@ -7,35 +8,21 @@ from .permissions import HasPermission
 from rest_framework import status
 from .models import *
 from .serializers import *
-from rest_framework.authentication import TokenAuthentication, BasicAuthentication
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import  AllowAny
-from rest_framework.views import APIView
 import random,string
-from django.core.mail import send_mail
 from django.conf import settings
 from django.db.models import Q
 from rest_framework.permissions import  IsAuthenticated,AllowAny
-from django.core.files.uploadedfile import UploadedFile
 import random, string
-from django.core.mail import send_mail, EmailMessage
+from django.core.mail import EmailMessage
 from django.conf import settings
-from django.utils.html import format_html
+from storages.backends.s3boto3 import S3Boto3Storage
+from django.core.files.storage import default_storage
+from .utils import get_b2_signed_url, upload_image_to_backblaze
 
-from b2sdk.v2 import InMemoryAccountInfo, B2Api
-
-def get_b2_signed_url(file_name, bucket_name='RoboticAliJohn'):
-    info = InMemoryAccountInfo()
-    b2_api = B2Api(info)
-
-    b2_api.authorize_account("production", settings.B2_KEY_ID, settings.B2_APP_KEY)
-    bucket = b2_api.get_bucket_by_name(bucket_name)
-
-    # Create a signed download URL valid for 1 hour
-    auth_token = bucket.get_download_authorization(file_name, 3600)
-    signed_url = f"https://f005.backblazeb2.com/file/{bucket_name}/{file_name}?Authorization={auth_token}"
-    return signed_url
 
 def generate_random_string(length=10):
     letters = string.ascii_letters + string.digits
@@ -208,20 +195,26 @@ def ForgetPasswordView(request):
 def upload_user_image(request):
     user = request.user
 
-    # Delete old image if exists
-    #if user.image and user.image.name and os.path.isfile(user.image.path):
-    #    os.remove(user.image.path)
+    # Delete old image if it exists (assumes default_storage uses Backblaze)
+    if user.image:
+        default_storage.delete(user.image.name)
 
-    serializer = RCuserImageSerializer(user, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
+    # Upload new image to Backblaze
+    image = upload_image_to_backblaze(request.FILES['image'])
+    if not image:
+        return Response({'error': 'Image upload failed'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Safe access to image URL
-        image_url = user.image.url if user.image and user.image.name else None
-        return Response({'image_url': image_url}, status=status.HTTP_200_OK)
+    # Update the user model's image field (assuming it's a URLField or CharField)
+    
+    user.image = image['file_name']
+    user.save()
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    # Return updated user info using serializer
+    serializer = RCUser(user)
+    return Response({
+        'message': 'Image uploaded successfully',
+        'image_url': image['signed_url'],
+    }, status=status.HTTP_200_OK)
 
 
 
@@ -233,9 +226,8 @@ def get_user_image(request, email):
         project = RCUser.objects.get(email=email)
     except RCUser.DoesNotExist:
         return Response({"error": "user not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    serializer = RCuserImageSerializer(project,context={'request': request})
-    url = get_b2_signed_url(serializer.data['image'])
+    
+    url = get_b2_signed_url(project.image.name)
     return Response({'image':url}, status=status.HTTP_200_OK)
 
 

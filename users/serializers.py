@@ -69,3 +69,12 @@ class RCuserImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = RCUser
         fields = ['image']
+        
+    def validate_image(self, value):
+        # Validate file size (e.g., 5MB limit)
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("Image size cannot exceed 5MB")
+        # Validate file type
+        if not value.name.lower().endswith(('.jpg', '.jpeg', '.png')):
+            raise serializers.ValidationError("Only JPG/PNG images are allowed")
+        return value
