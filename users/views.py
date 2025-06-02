@@ -129,8 +129,6 @@ class Login(ObtainAuthToken):
             return Response({"details":"Please visit Robotic Club in Latakia university, to confirm your account.\nYou can't login now!!"},status=status.HTTP_401_UNAUTHORIZED)
 
         
-        token = Token.objects.filter(user = user)
-        if(token): token.delete()
         
 
         token, created = Token.objects.get_or_create(user=user)
