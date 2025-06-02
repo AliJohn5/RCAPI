@@ -105,6 +105,7 @@ def RegisterView(request):
     serializer = RCUserSerializer(data=data)
     
     if serializer.is_valid():
+        
         user = serializer.save()
         token, created = Token.objects.get_or_create(user=user)
         return Response({
