@@ -17,7 +17,7 @@ import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DEBUG = False
+DEBUG = True
 
 
 DEFENDER_LOGIN_FAILURE_LIMIT = 5  # Number of allowed login attempts
@@ -49,7 +49,7 @@ CHANNEL_LAYERS = {
 
 
 
-if(DEBUG):
+if(DEBUG == False):
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -166,7 +166,7 @@ WSGI_APPLICATION = 'RCAPI.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 DATABASES = {}
 
-if(DEBUG):
+if(DEBUG == False):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
