@@ -49,7 +49,7 @@ CHANNEL_LAYERS = {
 
 
 
-if(DEBUG == False):
+if(DEBUG):
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
