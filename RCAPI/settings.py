@@ -63,7 +63,7 @@ else:
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": ["redis://red-d0teb2m3jp1c73egk34g:6379"],
+            "hosts": [("redis://red-d0teb2m3jp1c73egk34g","6379")],
         },
     },
     }
