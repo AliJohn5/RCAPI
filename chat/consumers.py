@@ -1,98 +1,106 @@
 import json
-
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.exceptions import DenyConnection
-from users.models import RCUser
-from .models import MyGroup,Message
 from django.shortcuts import get_object_or_404
-from channels.auth import login
 from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework.authtoken.models import Token
 from asgiref.sync import sync_to_async
+from .models import MyGroup, Message
 from .serializers import MessageSerializer
-class ChatConsumer(AsyncWebsocketConsumer):
-    
-    @sync_to_async
-    def getUser(self,token):
-        return RCUser.objects.get(id =  Token.objects.get(key = token).user_id)
-    
-    @sync_to_async
-    def isMember(self,user,group) -> bool:
-        return group.members.filter(email = user.email).exists()
-    
-    @sync_to_async
-    def getGroup(self,name):
-        return MyGroup.objects.get(name=name)
-    
-    @sync_to_async
-    def createMess(self,mess):
-        d = {}
-        d['content'] = mess
-        seri = MessageSerializer(data = d)
-        if seri.is_valid():
-            seri.save(author = self.user)
-            obj = Message.objects.get(pk = seri.data['pk'])
-            obj.group.add(self.group)
+from users.models import RCUser
+from rest_framework.authtoken.models import Token
 
-            return obj.date, self.room_name
-        else: return None,None
+class ChatConsumer(AsyncWebsocketConsumer):
+
+    # ========== Database Helpers ==========
+
+    @sync_to_async
+    def get_user_from_jwt(self, token):
+        access_token = get_object_or_404(Token,key=token)
+        user_id = access_token.user_id
+        return RCUser.objects.get(id=user_id)
+
+    @sync_to_async
+    def get_group(self, name):
+        return MyGroup.objects.get(name=name)
+
+    @sync_to_async
+    def is_member(self, user, group) -> bool:
+        return group.members.filter(email=user.email).exists()
+
+    @sync_to_async
+    def create_message(self, content, author, group):
+        data = {'content': content}
+        serializer = MessageSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(author=author)
+            message = Message.objects.get(pk=serializer.data['pk'])
+            message.group.add(group)
+            return message.date
+        return None
+
+    # ========== WebSocket Lifecycle ==========
 
     async def connect(self):
-        try :
+        try:
             self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
             self.room_group_name = f"chat_{self.room_name}"
 
-            header = self.scope['headers']
-            token = b''
+            # Extract Authorization header (JWT)
+            headers = dict((k.lower(), v) for k, v in self.scope["headers"])
+            raw_token = headers.get(b"authorization", None)
+            if not raw_token:
+                return await self.close()
 
-            for i in header:
-                if(i[0] == b'authorization'):
-                    token = i[1]
-                    break
-                
-                
-            if(not token):
-                await self.close()
+            token_str = raw_token.decode().split(" ")[1]  # Remove "Bearer"
+            self.user = await self.get_user_from_jwt(token_str)
+            self.group = await self.get_group(self.room_name)
 
-            token = token.decode().split(' ')[1]
+            if not await self.is_member(self.user, self.group):
+                return await self.close()
 
-            try:
-                self.user =  await self.getUser(token)
-                self.group =  await self.getGroup(self.room_name)
+            await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+            await self.accept()
 
-                if(self.user and self.group):
-                    if(await self.isMember(self.user,self.group)):
-                        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
-                        await self.accept()
-                    else:
-                        await self.close()
-            except Exception as e:
-                await self.close()
         except Exception as e:
-                await self.close()
-        return
-        
+            await self.close()
 
     async def disconnect(self, close_code):
-        # Leave room group
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
-    # Receive message from WebSocket
+    # ========== Message Handling ==========
+
     async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
-        message = text_data_json["message"]
-        
+        try:
+            data = json.loads(text_data)
+            message = data.get("message", "").strip()
+            if not message:
+                return  # Ignore empty messages
 
-        # Send message to room group
-        await self.channel_layer.group_send(
-            self.room_group_name, {"type": "chat.message", "message": message}
-        )
+            # Create message in DB (only sender)
+            date = await self.create_message(message, self.user, self.group)
+            if not date:
+                return
 
-    # Receive message from room group
+            # Broadcast to group
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "chat.message",
+                    "message": message,
+                    "name": self.user.get_full_name(),
+                    "email": self.user.email,
+                    "date": str(date),
+                    "groupeName": self.room_name,
+                }
+            )
+        except Exception as e:
+            pass  # You can log error here
+
     async def chat_message(self, event):
-        message = event["message"]
-        nameFrom = self.user.first_name + " " + self.user.last_name
-        emailFrom  = self.user.email
-        date , groupeName= await self.createMess(message)
-        if(date):
-            await self.send(text_data=json.dumps({"message": message,"emailFrom" : emailFrom,"nameFrom":nameFrom,"date":str(date),'groupeName':groupeName}))
+        await self.send(text_data=json.dumps({
+            "message": event["message"],
+            "emailFrom": event["email"],
+            "nameFrom": event["name"],
+            "date": event["date"],
+            "groupeName": event["groupeName"]
+        }))

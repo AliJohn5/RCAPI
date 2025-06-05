@@ -17,9 +17,15 @@ import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+DEBUG = True
+
+
 DEFENDER_LOGIN_FAILURE_LIMIT = 5  # Number of allowed login attempts
 DEFENDER_COOLOFF_TIME = 300  # Cool-off time in seconds (5 minutes)
 DEFENDER_REDIS_URL= os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
+if(DEBUG == "False"):
+    DEFENDER_REDIS_URL = "redis://red-d0teb2m3jp1c73egk34g:6379/0"
 #DEFENDER_REDIS_URL = 'redis://localhost:6379/0'  # Use Redis to store failed attempts
 
 # Quick-start development settings - unsuitable for production
@@ -30,7 +36,6 @@ SECRET_KEY = 'django-insecure-o49k%te#0n%&(^vpilpc-c0q6-x7%atju1*!u^=ahzn#*c^tww
 
 # SECURITY WARNING: don't run with debug turned on in production!
 #DEBUG = os.getenv("DEBUG", "False") == "True"
-DEBUG = False
 
 ALLOWED_HOSTS = ['https://rcapi.onrender.com','rcapi.onrender.com']
 
@@ -58,7 +63,7 @@ else:
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [os.environ.get("REDIS_URL", "redis://localhost:6379")],
+            "hosts": ["redis://red-d0teb2m3jp1c73egk34g:6379"],
         },
     },
     }
