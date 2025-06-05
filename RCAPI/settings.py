@@ -17,7 +17,7 @@ import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DEBUG = True
+DEBUG = False
 
 
 DEFENDER_LOGIN_FAILURE_LIMIT = 5  # Number of allowed login attempts
@@ -44,30 +44,30 @@ CSRF_TRUSTED_ORIGINS = ['https://rcapi.onrender.com']
 
 ASGI_APPLICATION = "RCAPI.asgi.application"
 
-CHANNEL_LAYERS = {
-}
-
-
-
-if(DEBUG == False):
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [("127.0.0.1", 6379)],
-            },
-        },
-    }
-else:
-    os.environ.setdefault("REDIS_URL","redis://red-d0teb2m3jp1c73egk34g:6379")
-    CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts":  [os.environ.get("REDIS_URL", "redis://localhost:6379")],
-        },
-    },
-    }
+#CHANNEL_LAYERS = {
+#}
+#
+#
+#
+#if(DEBUG == False):
+#    CHANNEL_LAYERS = {
+#        "default": {
+#            "BACKEND": "channels_redis.core.RedisChannelLayer",
+#            "CONFIG": {
+#                "hosts": [("127.0.0.1", 6379)],
+#            },
+#        },
+#    }
+#else:
+#    os.environ.setdefault("REDIS_URL","redis://red-d0teb2m3jp1c73egk34g:6379")
+#    CHANNEL_LAYERS = {
+#    "default": {
+#        "BACKEND": "channels_redis.core.RedisChannelLayer",
+#        "CONFIG": {
+#            "hosts":  [os.environ.get("REDIS_URL", "redis://localhost:6379")],
+#        },
+#    },
+#    }
 
 print(os.environ.get("REDIS_URL", "redis://localhost:6379"))
 #DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
@@ -167,7 +167,7 @@ WSGI_APPLICATION = 'RCAPI.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 DATABASES = {}
 
-if(DEBUG == False):
+if(DEBUG):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
