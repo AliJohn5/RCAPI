@@ -24,8 +24,6 @@ DEFENDER_LOGIN_FAILURE_LIMIT = 5  # Number of allowed login attempts
 DEFENDER_COOLOFF_TIME = 300  # Cool-off time in seconds (5 minutes)
 DEFENDER_REDIS_URL= os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-if(DEBUG == "False"):
-    DEFENDER_REDIS_URL = "redis://red-d0teb2m3jp1c73egk34g:6379/0"
 #DEFENDER_REDIS_URL = 'redis://localhost:6379/0'  # Use Redis to store failed attempts
 
 # Quick-start development settings - unsuitable for production
@@ -63,10 +61,12 @@ else:
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("redis://red-d0teb2m3jp1c73egk34g",6379)],
+            "hosts":  [os.environ.get("REDIS_URL", "redis://localhost:6379")],
         },
     },
     }
+
+print(os.environ.get("REDIS_URL", "redis://localhost:6379"))
 #DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 # File storage configuration
 STORAGES = {
