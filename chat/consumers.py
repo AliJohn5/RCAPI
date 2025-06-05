@@ -72,6 +72,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         try:
             data = json.loads(text_data)
+            
             message = data.get("message", "").strip()
             if not message:
                 return  # Ignore empty messages
@@ -80,14 +81,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
             date = await self.create_message(message, self.user, self.group)
             if not date:
                 return
+            name = ""
 
+            if(self.user.first_name):
+                name = self.user.first_name
+                if(self.user.last_name):
+                    name = name +" "+ self.user.last_name
+            elif(self.user.last_name):
+                name = self.user.last_name
             # Broadcast to group
+
+            
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
                     "type": "chat.message",
                     "message": message,
-                    "name": self.user.get_full_name(),
+                    "name": name,
                     "email": self.user.email,
                     "date": str(date),
                     "groupeName": self.room_name,
@@ -97,6 +107,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             pass  # You can log error here
 
     async def chat_message(self, event):
+        
         await self.send(text_data=json.dumps({
             "message": event["message"],
             "emailFrom": event["email"],
