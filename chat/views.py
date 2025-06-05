@@ -20,7 +20,7 @@ def isMember(user,group) -> bool:
     return group.members.filter(email = user.email).exists()
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 @permission_classes([HasPermission("login")])
 @authentication_classes([TokenAuthentication])
 def mess(request,room_name,i1,i2):
@@ -45,13 +45,40 @@ def mess(request,room_name,i1,i2):
 
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 @permission_classes([HasPermission("login")])
 @authentication_classes([TokenAuthentication])
-def groups_list(request):
+def groups_list(request,i1,i2):
     user = request.user
-    data = MyGroup.objects.filter(Q(members = user))
-    return Response( MyGroupSerializer(data,many = True).data ,status=status.HTTP_200_OK)
+    ans = []
+
+    data = MyGroup.objects.filter(
+        Q(members = user)
+    )
+
+    for group in data:
+        mess = Message.objects.filter(
+            Q(group=group)
+        )
+        if(len(mess) > 0):
+            ans.append(
+                {
+                    'author':{
+                        'email' : mess[0].author.email,
+                        'last_name' : mess[0].author.first_name,
+                        'first_name' : mess[0].author.last_name
+
+                    },
+                    'content' : mess[0].content,
+                    'date' : str(mess[0].date),
+                    'group':group.name
+                }
+            )
+        else:
+            ans.append({'group':group.name})
+
+        
+    return Response(ans[i1 : i2],status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])

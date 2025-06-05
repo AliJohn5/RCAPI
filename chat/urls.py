@@ -4,7 +4,7 @@ from . import views
 
 
 urlpatterns = [
-    path("groups/", views.groups_list),     
+    path("groups/<int:i1>/<int:i2>", views.groups_list),     
     path("groups/<str:room_name>/", views.groups_list_name),
     path("<str:room_name>/<int:i1>/<int:i2>", views.mess),
     path("groups-create/", views.groups_create),

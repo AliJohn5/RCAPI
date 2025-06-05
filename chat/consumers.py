@@ -34,8 +34,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             obj = Message.objects.get(pk = seri.data['pk'])
             obj.group.add(self.group)
 
-            return True
-        else: return False
+            return obj.date, self.room_name
+        else: return None,None
 
     async def connect(self):
         try :
@@ -81,6 +81,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = text_data_json["message"]
+        
 
         # Send message to room group
         await self.channel_layer.group_send(
@@ -90,7 +91,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # Receive message from room group
     async def chat_message(self, event):
         message = event["message"]
-        author = self.user.first_name + " " + self.user.last_name
-        if(author == ' '): author = self.user.email
-        if(await self.createMess(message)):
-            await self.send(text_data=json.dumps({"message": message,"author" : author}))
+        nameFrom = self.user.first_name + " " + self.user.last_name
+        emailFrom  = self.user.email
+        date , groupeName= await self.createMess(message)
+        if(date):
+            await self.send(text_data=json.dumps({"message": message,"emailFrom" : emailFrom,"nameFrom":nameFrom,"date":str(date),'groupeName':groupeName}))
