@@ -17,7 +17,7 @@ import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DEBUG = True
+DEBUG = False
 
 
 DEFENDER_LOGIN_FAILURE_LIMIT = 5  # Number of allowed login attempts
@@ -37,8 +37,8 @@ SECRET_KEY = 'django-insecure-o49k%te#0n%&(^vpilpc-c0q6-x7%atju1*!u^=ahzn#*c^tww
 
 ALLOWED_HOSTS = ['https://rcapi.onrender.com','rcapi.onrender.com']
 
-if(DEBUG):
-    ALLOWED_HOSTS += '*'
+
+ALLOWED_HOSTS += '*'
 
 CSRF_TRUSTED_ORIGINS = ['https://rcapi.onrender.com']
 
@@ -49,7 +49,7 @@ CHANNEL_LAYERS = {
 
 
 
-if(DEBUG == False):
+if(DEBUG):
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -166,7 +166,7 @@ WSGI_APPLICATION = 'RCAPI.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 DATABASES = {}
 
-if(DEBUG == False):
+if(DEBUG):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
