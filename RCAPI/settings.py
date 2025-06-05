@@ -44,30 +44,29 @@ CSRF_TRUSTED_ORIGINS = ['https://rcapi.onrender.com']
 
 ASGI_APPLICATION = "RCAPI.asgi.application"
 
-#CHANNEL_LAYERS = {
-#}
-#
-#
-#
-#if(DEBUG == False):
-#    CHANNEL_LAYERS = {
-#        "default": {
-#            "BACKEND": "channels_redis.core.RedisChannelLayer",
-#            "CONFIG": {
-#                "hosts": [("127.0.0.1", 6379)],
-#            },
-#        },
-#    }
-#else:
-#    os.environ.setdefault("REDIS_URL","redis://red-d0teb2m3jp1c73egk34g:6379")
-#    CHANNEL_LAYERS = {
-#    "default": {
-#        "BACKEND": "channels_redis.core.RedisChannelLayer",
-#        "CONFIG": {
-#            "hosts":  [os.environ.get("REDIS_URL", "redis://localhost:6379")],
-#        },
-#    },
-#    }
+CHANNEL_LAYERS = {
+}
+
+
+
+if(DEBUG == False):
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [("127.0.0.1", 6379)],
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts":  [os.environ.get("REDIS_URL", "redis://localhost:6379")],
+        },
+    },
+    }
 
 print(os.environ.get("REDIS_URL", "redis://localhost:6379"))
 #DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
