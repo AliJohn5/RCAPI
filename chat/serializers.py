@@ -1,7 +1,6 @@
 from .models import *
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer,Serializer,CharField
 from users.serializers import RCUserSerializer
-
 
 
 
@@ -19,3 +18,12 @@ class MessageSerializer(ModelSerializer):
     class Meta:
         model = Message
         fields = ('pk','content','author','group','date')
+
+
+class GroupCodeSerializer(ModelSerializer):
+    class Meta:
+        model = GroupCode
+        fields = [ 'group_name', 'code' , 'date']
+        read_only_fields = ['code'] 
+
+

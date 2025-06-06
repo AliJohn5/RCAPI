@@ -2,6 +2,12 @@ from django.db import models
 from users.models import RCUser
 # Create your models here.
 
+import string
+import random
+from django.db import models
+
+def generate_random_code(length=8):
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 
 class MyGroup(models.Model):
@@ -21,3 +27,22 @@ class Message(models.Model):
         return self.content
     class Meta:
         ordering = ['-date']
+
+
+
+
+def generate_random_code(length=10):
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+class GroupCode(models.Model):
+    code = models.CharField(max_length=15, blank=True, editable=False)
+    group_name = models.CharField(max_length=50,)
+    date = models.DateTimeField(auto_now_add=True,editable=False)
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = generate_random_code()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return self.group_name
