@@ -298,4 +298,129 @@ def read_per(request):
     return Response(data=per.data, status=status.HTTP_200_OK)
 
     
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, HasPermission("login")])
+@authentication_classes([TokenAuthentication])
+def list_permissions(request):
 
+    ans = {
+        'permissions':[],
+        'myPermissions':[],
+        'pendingPermissions':[],
+    }
+
+    user = request.user
+    permissions = Permission.objects.all()
+    myPermissions = user.permissions.all()
+    pendingPermissions = PermissionRequest.objects.filter(user = user)
+
+    for per in permissions:
+        ans['permissions'].append( per.permission )
+    
+    for per in myPermissions:
+        ans['myPermissions'].append( per.permission )
+
+    for per in pendingPermissions:
+        ans['pendingPermissions'].append( per.permission )    
+
+    return Response(ans,status=status.HTTP_200_OK)
+
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, HasPermission("login"),HasPermission("upgrade-user")])
+@authentication_classes([TokenAuthentication])
+def list_pending_permissions(request,i1,i2):
+    pendingPermissionsSerializer = PermissionRequestSerialiser(PermissionRequest.objects.all()[i1:i2],many = True)
+    return Response(pendingPermissionsSerializer.data,status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, HasPermission("login")])
+@authentication_classes([TokenAuthentication])
+def send_pending_permissions(request):
+    user = request.user
+    permissions = request.data['permissions']
+
+    for per in permissions:
+        try:
+            PermissionRequest.objects.create(
+                user = user,
+                permission = per
+            )
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+   
+    return Response(status=status.HTTP_200_OK)
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, HasPermission("login"),HasPermission("upgrade-user")])
+@authentication_classes([TokenAuthentication])
+def action_pending_permissions(request):
+
+    for data in request.data:
+        pk = data['pk']
+        action = data['action']
+        req = get_object_or_404(PermissionRequest,pk=pk)
+
+        if(action == 'delete'):
+            req.delete()
+
+        elif(action == 'accept'):
+            user = req.user
+            permission = get_object_or_404(Permission,permission=req.permission)
+            user.permissions.add(permission)
+            user.save()
+            req.delete()
+        else:
+            return Response({'unknown action' : action},status=status.HTTP_400_BAD_REQUEST)
+   
+    return Response(status=status.HTTP_200_OK)
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, HasPermission("upgrade-user")])
+@authentication_classes([TokenAuthentication])
+def list_users_permissions(request,i1,i2):
+
+    ans = {
+        'permissions':[],
+        'users':[],
+    }
+
+    permissions = Permission.objects.all()
+    users = RCUser.objects.all()[i1:i2]
+
+    for per in permissions:
+        ans['permissions'].append( per.permission )
+    
+    for user in users:
+        data = {}
+        data['user'] = user.email
+        data['permissions'] = []
+        per = user.permissions.all()
+        for x in per:
+            data['permissions'].append(x.permission)
+        ans['users'].append(data)
+
+    return Response(ans,status=status.HTTP_200_OK)
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, HasPermission("upgrade-user")])
+@authentication_classes([TokenAuthentication])
+def upgrade_users_permissions(request):
+
+    for data in request.data:
+        user = get_object_or_404(RCUser,email = data['user'])
+        user.permissions.clear()
+        
+        for perm in data['permissions']:
+            x = get_object_or_404(Permission,permission = perm)
+            user.permissions.add(x)
+        user.save()
+        
+    return Response(status=status.HTTP_200_OK)

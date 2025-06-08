@@ -55,4 +55,11 @@ class Code(models.Model):
 
     def __str__(self):
         return self.user.email
-    
+
+
+
+class PermissionRequest(models.Model):
+    permission = models.CharField(max_length=255)
+    user = models.ForeignKey(RCUser,on_delete=models.CASCADE,related_name="requests_to_upgrade")
+    def __str__(self) -> str:
+        return self.permission

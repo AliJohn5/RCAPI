@@ -19,6 +19,14 @@ urlpatterns = [
     path('write-per/',write_per),
     path('read-per/',read_per),
 
+    path('permissions-list/',list_permissions),
+    path('pending-permissions/<int:i1>/<int:i2>',list_pending_permissions),
+    path('send-upgrade-request/',send_pending_permissions),
+    path('action-pending-permissions/',action_pending_permissions),
+
+    path('list-users-permissions/<int:i1>/<int:i2>',list_users_permissions),
+    path('upgrade-users-permissions/',upgrade_users_permissions),
+
 
 
     path('upload-user-image/', upload_user_image, name='upload_something_image'),

@@ -1,6 +1,6 @@
 
 from rest_framework import serializers
-from .models import RCUser, Permission,Code
+from .models import RCUser, Permission,Code,PermissionRequest
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 
@@ -83,3 +83,14 @@ class RCuserImageSerializer(serializers.ModelSerializer):
         if not value.name.lower().endswith(('.jpg', '.jpeg', '.png')):
             raise serializers.ValidationError("Only JPG/PNG images are allowed")
         return value
+    
+
+class PermissionRequestSerialiser(serializers.ModelSerializer):
+    user = serializers.CharField()
+
+    class Meta:
+        model = PermissionRequest
+        fields = ('pk','user','permission')
+
+    def get_user(self, obj):
+        return obj.user.email

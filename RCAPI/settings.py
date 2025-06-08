@@ -95,6 +95,13 @@ AWS_S3_ENDPOINT_URL = f'https://{AWS_S3_ENDPOINT}'
 
 
 INSTALLED_APPS = [
+    "unfold",  # before django.contrib.admin
+    "unfold.contrib.filters",  # optional, if special filters are needed
+    "unfold.contrib.forms",  # optional, if special form elements are needed
+    "unfold.contrib.inlines",  # optional, if special inlines are needed
+    "unfold.contrib.import_export",  # optional, if django-import-export package is used
+    "unfold.contrib.guardian",  # optional, if django-guardian package is used
+    "unfold.contrib.simple_history",
     'storages',
     'chat',
     'daphne',
@@ -111,6 +118,7 @@ INSTALLED_APPS = [
     'store',
     'utils',
     'defender',
+    'import_export'
 
 ]
 AUTH_USER_MODEL = 'users.RCUser'
@@ -254,3 +262,60 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
 #STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+
+from django.templatetags.static import static
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
+
+UNFOLD = {
+    "SITE_TITLE": "Robotic Club",
+    "SITE_HEADER": "Robotic Club Admin",
+    "SITE_SUBHEADER": "Taples",
+
+    "COLORS": {
+    "base": {
+        "50": "249, 250, 251",
+        "100": "243, 244, 246",
+        "200": "229, 231, 235",
+        "300": "209, 213, 219",
+        "400": "156, 163, 175",
+        "500": "107, 114, 128",
+        "600": "75, 85, 99",
+        "700": "55, 65, 81",
+        "800": "31, 41, 55",
+        "900": "17, 24, 39",
+        "950": "3, 7, 18"
+    },
+    "primary": {
+        "50": "232, 241, 245",
+        "100": "208, 229, 238",
+        "200": "165, 206, 226",
+        "300": "114, 181, 212",
+        "400": "61, 154, 194",
+        "500": "32, 123, 168",
+        "600": "28, 96, 139",
+        "700": "25, 79, 116",
+        "800": "22, 60, 79",
+        "900": "16, 44, 60",
+        "950": "10, 29, 41"
+    },
+    "font": {
+        "subtle-light": "var(--color-base-500)",
+        "subtle-dark": "var(--color-base-400)",
+        "default-light": "var(--color-base-600)",
+        "default-dark": "var(--color-base-300)",
+        "important-light": "var(--color-base-900)",
+        "important-dark": "var(--color-base-100)"
+    }
+},
+    "EXTENSIONS": {
+        "modeltranslation": {
+            "flags": {
+                "en": "🇬🇧",
+                "fr": "🇫🇷",
+                "nl": "🇧🇪",
+            },
+        },
+    },
+}
