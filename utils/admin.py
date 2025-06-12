@@ -9,3 +9,11 @@ from unfold.admin import ModelAdmin
 @admin.register(Borrow)
 class CustomAdminClass(ModelAdmin):
     pass
+
+@admin.register(Post)
+class CustomAdminClass(ModelAdmin):
+    pass
+
+@admin.register(PostImage)
+class CustomAdminClass(ModelAdmin):
+    pass

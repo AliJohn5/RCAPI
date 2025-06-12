@@ -13,3 +13,25 @@ class Borrow(models.Model):
         return  self.something.name
 
 
+
+class Post(models.Model):
+    author = models.ForeignKey(RCUser,on_delete=models.PROTECT,related_name="MyPosts",null=True,blank=True,db_constraint=False)
+    content = models.TextField(blank=True,null=True)
+    date = models.DateTimeField(auto_now_add=True)
+    is_for_web_and_app = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self) -> str:
+        return  f"{self.author.email}: {self.content[0:20]}"
+
+
+class PostImage(models.Model):
+    image = models.ImageField(upload_to="photos/%y/%m/%d/",blank=True,null=True)
+    post = models.ForeignKey(Post,on_delete=models.CASCADE,related_name="MyImages")
+    signed_url = models.TextField(blank=True, null=True)
+    signed_url_generated_at = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self) -> str:
+        return  f"{self.post.author.email}: {self.post.content[0:20]}"

@@ -38,7 +38,8 @@ class RCUser(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(auto_now_add=True)
     permissions = models.ManyToManyField(Permission, related_name='users', blank=True)
     image = models.ImageField(upload_to="photos/%y/%m/%d/",blank=True,null=True)
-
+    signed_url = models.TextField(blank=True, null=True)
+    signed_url_generated_at = models.DateTimeField(blank=True, null=True)
     objects = RCUserManager()
 
     USERNAME_FIELD = 'email'

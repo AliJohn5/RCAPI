@@ -2,6 +2,8 @@ from rest_framework.decorators import api_view,permission_classes,authentication
 from rest_framework.response import Response
 from users.permissions import HasPermission
 from rest_framework import status
+
+from users.utils import upload_image_to_backblaze
 from .models import *
 from .serializers import *
 from rest_framework.authentication import TokenAuthentication
@@ -94,3 +96,62 @@ def delete_borrow(request,pk):
     data.delete()
     return Response(status=status.HTTP_200_OK)
 
+
+
+@api_view(['POST'])
+@permission_classes([HasPermission("login"),HasPermission("create-post")])
+@authentication_classes([TokenAuthentication])
+def create_post(request):
+    user = request.user
+    
+    # Initialize serializer with post data
+    serializer = PostSerializer(data=request.data,)
+
+    if serializer.is_valid():
+        # Save the post instance first
+        post = serializer.save(author=user)
+
+        # Handle image uploads if any
+        images = request.FILES.getlist('images')  # use getlist to handle multiple files
+        for img in images:
+            image_info = upload_image_to_backblaze(img)
+            if not image_info:
+                return Response({'error': 'Image upload failed'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create PostImage with uploaded image filename (assuming you're storing file_name somewhere)
+            PostImage.objects.create(post=post, image=image_info['file_name'])
+
+        # Re-serialize the post to include the images
+        output_serializer = PostSerializer(post, context={'request': request})
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+    
+
+    print(serializer.errors)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@api_view(['Get'])
+@permission_classes([AllowAny])
+def get_post(request,pk):
+    post = get_object_or_404(Post,pk = pk)
+    output_serializer = PostSerializer(post, context={'request': request})
+    return Response(output_serializer.data, status=status.HTTP_200_OK)
+
+
+
+@api_view(['Get'])
+@permission_classes([AllowAny])
+def list_posts(request,i1,i2):
+    post = Post.objects.all()
+    output_serializer = PostSerializer(post, many = True,context={'request': request})
+    return Response(output_serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+@permission_classes([HasPermission("login"),HasPermission("create-post")])
+@authentication_classes([TokenAuthentication])
+def delete_post(request,pk):
+    post = get_object_or_404(Post,pk = pk)
+    post.delete()
+    return Response(status=status.HTTP_200_OK)

@@ -69,7 +69,7 @@ else:
     },
     }
 
-print(os.environ.get("REDIS_URL", "redis://localhost:6379"))
+#print(os.environ.get("REDIS_URL", "redis://localhost:6379"))
 #DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 # File storage configuration
 STORAGES = {

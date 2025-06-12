@@ -1,3 +1,4 @@
+from datetime import timedelta
 import os
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
@@ -206,6 +207,8 @@ def upload_user_image(request):
     # Update the user model's image field (assuming it's a URLField or CharField)
     
     user.image = image['file_name']
+    user.signed_url = image['signed_url']
+    user.signed_url_generated_at = timezone.now
     user.save()
 
     # Return updated user info using serializer
@@ -226,8 +229,19 @@ def get_user_image(request, email):
     except RCUser.DoesNotExist:
         return Response({"error": "user not found"}, status=status.HTTP_404_NOT_FOUND)
     
-    url = get_b2_signed_url(project.image.name)
-    return Response({'image':url}, status=status.HTTP_200_OK)
+    now = timezone.now()
+
+    if project.signed_url and project.signed_url_generated_at:
+            if now - project.signed_url_generated_at < timedelta(days=6):
+                return Response({'image':project.signed_url}, status=status.HTTP_200_OK)
+            
+
+    new_signed_url = get_b2_signed_url(project.image.name)
+    project.signed_url = new_signed_url
+    project.signed_url_generated_at = now
+    project.save(update_fields=["signed_url", "signed_url_generated_at"])
+
+    return Response({'image':new_signed_url}, status=status.HTTP_200_OK)
 
 
 @api_view(['PUT'])
