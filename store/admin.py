@@ -21,6 +21,15 @@ class CustomAdminClass(ModelAdmin):
 class CustomAdminClass(ModelAdmin):
     pass
 
+@admin.register(ClosetImage)
+class CustomAdminClass(ModelAdmin):
+    pass
+@admin.register(ProjectImage)
+class CustomAdminClass(ModelAdmin):
+    pass
+@admin.register(SomeThingImage)
+class CustomAdminClass(ModelAdmin):
+    pass
 #admin.site.register(Closet)
 #admin.site.register(Type)
 #admin.site.register(Project)

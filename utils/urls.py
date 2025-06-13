@@ -12,6 +12,7 @@ urlpatterns = [
 
     path("post/create/",create_post),
     path("post/list/<int:i1>/<int:i2>",list_posts),
+    path("post/list-web/<int:i1>/<int:i2>",list_posts_web),
     path("post/delete/<int:pk>",delete_post),
     path("post/get/<int:pk>",get_post),
 

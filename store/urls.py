@@ -8,12 +8,16 @@ urlpatterns = [
     # read (list, one)
     path('closets/',closets),
     path('closets/<int:pk>',closets_pk),
+
     path('mytypes/',mytypes),
     path('mytypes/<int:pk>',mytypes_pk),
+
     path('projects/',projects),
     path('projects/<int:pk>',projects_pk),
+
     path('somethings/',somethings),
     path('somethings/<int:pk>',somethings_pk),
+    
     path('somethingsp/',somethings_private),
     path('somethingsp/<int:pk>',somethings_private_pk),
 

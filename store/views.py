@@ -3,6 +3,8 @@ from rest_framework.decorators import api_view,permission_classes,authentication
 from rest_framework.response import Response
 from users.permissions import HasPermission
 from rest_framework import status
+
+from users.utils import upload_image_to_backblaze
 from .models import *
 from .serializers import *
 from rest_framework.authentication import TokenAuthentication
@@ -141,10 +143,26 @@ def somethings_private_pk(request,pk):
 @permission_classes([HasPermission("login"),HasPermission("write-closet")])
 @authentication_classes([TokenAuthentication])
 def create_closet(request):
-    seri = ClosetSerializer(data=request.data)
-    if seri.is_valid():
-        seri.save()
-        return Response(seri.data,status=status.HTTP_201_CREATED)
+    serializer = ClosetSerializer(data=request.data)
+
+    if serializer.is_valid():
+        # Save the post instance first
+        closet = serializer.save()
+
+        # Handle image uploads if any
+        images = request.FILES.getlist('images')  # use getlist to handle multiple files
+        for img in images:
+            image_info = upload_image_to_backblaze(img)
+            if not image_info:
+                return Response({'error': 'Image upload failed'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create PostImage with uploaded image filename (assuming you're storing file_name somewhere)
+            ClosetImage.objects.create(closet=closet, image=image_info['file_name'])
+
+        # Re-serialize the post to include the images
+        output_serializer = ClosetSerializer(closet, context={'request': request})
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+    
     return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -169,13 +187,24 @@ def create_proj(request):
     for wr in request.data["workers"]:
         workers.append(get_object_or_404(RCUser,email = wr))
     
+    project = seri
     if seri.is_valid():
         seri.save()
         obj = Project.objects.get(pk = seri.data["pk"])
         for wr in workers:
             obj.workers.add(wr)
-        obj.save()
-        seri = ProjectSerializer(obj)
+        project =  obj.save()
+
+        images = request.FILES.getlist('images')  # use getlist to handle multiple files
+        for img in images:
+            image_info = upload_image_to_backblaze(img)
+            if not image_info:
+                return Response({'error': 'Image upload failed'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create PostImage with uploaded image filename (assuming you're storing file_name somewhere)
+            ProjectSerializer.objects.create(project=project, image=image_info['file_name'])
+
+        seri = ProjectSerializer(project)
         return Response(seri.data,status=status.HTTP_201_CREATED)
     return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -191,7 +220,15 @@ def create_thing(request):
     project = get_object_or_404(Project , pk = request.data['project'])
 
     if seri.is_valid():
-        seri.save(closet = closet,mytype = mytype,project = project)
+        something = seri.save(closet = closet,mytype = mytype,project = project)
+        images = request.FILES.getlist('images')  # use getlist to handle multiple files
+        for img in images:
+            image_info = upload_image_to_backblaze(img)
+            if not image_info:
+                return Response({'error': 'Image upload failed'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create PostImage with uploaded image filename (assuming you're storing file_name somewhere)
+            SomeThingImage.objects.create(someThing=something, image=image_info['file_name'])
         return Response(seri.data,status=status.HTTP_201_CREATED)
     return Response(status=status.HTTP_400_BAD_REQUEST)
 

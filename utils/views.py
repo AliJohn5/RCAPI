@@ -143,7 +143,16 @@ def get_post(request,pk):
 @api_view(['Get'])
 @permission_classes([AllowAny])
 def list_posts(request,i1,i2):
-    post = Post.objects.all()
+    post = Post.objects.all()[i1:i2]
+    output_serializer = PostSerializer(post, many = True,context={'request': request})
+    return Response(output_serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['Get'])
+@permission_classes([AllowAny])
+def list_posts_web(request,i1,i2):
+    post = Post.objects.filter(
+        is_for_web_and_app = True
+    )[i1:i2]
     output_serializer = PostSerializer(post, many = True,context={'request': request})
     return Response(output_serializer.data, status=status.HTTP_200_OK)
 

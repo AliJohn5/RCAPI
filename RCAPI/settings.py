@@ -95,6 +95,7 @@ AWS_S3_ENDPOINT_URL = f'https://{AWS_S3_ENDPOINT}'
 
 
 INSTALLED_APPS = [
+    'corsheaders',
     "unfold",  # before django.contrib.admin
     "unfold.contrib.filters",  # optional, if special filters are needed
     "unfold.contrib.forms",  # optional, if special form elements are needed
@@ -118,7 +119,8 @@ INSTALLED_APPS = [
     'store',
     'utils',
     'defender',
-    'import_export'
+    'import_export',
+    'web'
 
 ]
 AUTH_USER_MODEL = 'users.RCUser'
@@ -138,6 +140,7 @@ EMAIL_HOST_PASSWORD = 'cwus yewv uaoa rqkg'  # Replace with your email password
 DEFAULT_FROM_EMAIL = 'roboticlab.tishreen.university@gmail.com'  
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -151,6 +154,14 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'RCAPI.urls'
+
+CORS_ALLOWED_ORIGINS = [
+    "https://rcapi.onrender.com",
+]
+CORS_ALLOW_ALL_ORIGINS = False
+
+if(DEBUG):
+    CORS_ALLOW_ALL_ORIGINS = True 
 
 TEMPLATES = [
     {
