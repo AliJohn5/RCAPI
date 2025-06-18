@@ -17,7 +17,7 @@ class ClosetImageSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         now = timezone.now()
         if obj.signed_url and obj.signed_url_generated_at:
-            if now - obj.signed_url_generated_at < timedelta(days=6):
+            if now - obj.signed_url_generated_at < timedelta(days=5):
                 return obj.signed_url 
 
         
@@ -41,7 +41,7 @@ class ProjectImageSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         now = timezone.now()
         if obj.signed_url and obj.signed_url_generated_at:
-            if now - obj.signed_url_generated_at < timedelta(days=6):
+            if now - obj.signed_url_generated_at < timedelta(days=5):
                 return obj.signed_url 
 
         
@@ -64,7 +64,7 @@ class SomeThingImageSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         now = timezone.now()
         if obj.signed_url and obj.signed_url_generated_at:
-            if now - obj.signed_url_generated_at < timedelta(days=6):
+            if now - obj.signed_url_generated_at < timedelta(days=5):
                 return obj.signed_url 
 
         
