@@ -232,7 +232,7 @@ def get_user_image(request, email):
     now = timezone.now()
 
     if project.signed_url and project.signed_url_generated_at:
-            if now - project.signed_url_generated_at < timedelta(days=5):
+            if now - project.signed_url_generated_at > timedelta(days=5):
                 return Response({'image':project.signed_url}, status=status.HTTP_200_OK)
             
 
