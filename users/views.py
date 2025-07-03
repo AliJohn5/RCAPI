@@ -199,10 +199,6 @@ def ForgetPasswordView(request):
 def upload_user_image(request):
     user = request.user
 
-    # Delete old image if it exists (assumes default_storage uses Backblaze)
-    if user.image:
-        default_storage.delete(user.image.name)
-
     # Upload new image to Backblaze
     image = upload_image_to_backblaze(request.FILES['image'])
     if not image:
