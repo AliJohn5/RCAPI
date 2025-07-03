@@ -197,7 +197,9 @@ if(DEBUG):
 else:   
     DATABASES = {
         'default': dj_database_url.config(
-            default = 'postgresql://rcdb_user:4W2lDd7quLc6nb36rkR4Zgruy4xjcmii@dpg-d0uoodh5pdvs73a4b2tg-a/rcdb'
+            default = 'postgresql://neondb_owner:npg_FjeG6v4SlomC@ep-purple-smoke-a1j8px2f-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+            conn_max_age=600,
+            ssl_require=True
         )
     }
 

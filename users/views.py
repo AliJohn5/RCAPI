@@ -109,6 +109,10 @@ def RegisterView(request):
         
         user = serializer.save()
         token, created = Token.objects.get_or_create(user=user)
+        PermissionRequest.objects.create(
+                user = user,
+                permission = "login"
+            )
         return Response({
             'id': user.pk,
             'email': user.email
