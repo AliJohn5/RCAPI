@@ -208,7 +208,7 @@ def upload_user_image(request):
     
     user.image = image['file_name']
     user.signed_url = image['signed_url']
-    user.signed_url_generated_at = timezone.now
+    user.signed_url_generated_at = timezone.now()
     user.save()
 
     # Return updated user info using serializer
