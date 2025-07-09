@@ -18,9 +18,8 @@ from django.views.decorators.csrf import csrf_exempt
 from utils.models import Borrow
 from django.db.models import Q
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-@authentication_classes([TokenAuthentication])
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def test(request):
     return Response(data={"test":"ok"})
 
