@@ -58,7 +58,7 @@ def upload_image_to_backblaze(file, existing_image=None, bucket_name=settings.AW
 
 
 
-def get_b2_signed_url(file_name, duration_seconds=86400):  # 86400 = 24 hours
+def get_b2_signed_url(file_name, duration_seconds=86400*6):  # 86400 = 24 hours
     """
     Generate a signed download URL for a file stored in Backblaze B2.
     
