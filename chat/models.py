@@ -22,6 +22,7 @@ class Message(models.Model):
     author = models.ForeignKey(RCUser, on_delete=models.DO_NOTHING, blank=True, null=True,db_constraint=False)
     group = models.ManyToManyField(MyGroup, blank=True, related_name="mymessages")
     date = models.DateTimeField(auto_now_add=True)
+    is_contain_file = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return self.content
@@ -46,3 +47,14 @@ class GroupCode(models.Model):
 
     def __str__(self) -> str:
         return self.group_name
+    
+
+class MessageFile(models.Model):
+    name =  models.TextField(blank=True, null=True)
+    origin_name =  models.TextField(blank=True, null=True)
+    message = models.ForeignKey(Message,on_delete=models.CASCADE,related_name="MyFiles")
+    signed_url = models.TextField(blank=True, null=True)
+    signed_url_generated_at = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self) -> str:
+        return  self.name

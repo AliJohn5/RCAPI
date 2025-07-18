@@ -3,6 +3,8 @@ from rest_framework.decorators import api_view,permission_classes,authentication
 from rest_framework.response import Response
 from users.permissions import HasPermission
 from rest_framework import status
+
+from users.utils import upload_image_to_backblaze
 from .models import *
 from .serializers import *
 from rest_framework.authentication import TokenAuthentication
@@ -205,3 +207,46 @@ def join_group_by_code(request):
     return Response( status=status.HTTP_200_OK)
     
     
+
+@api_view(['POST'])
+@permission_classes([HasPermission("login")])
+@authentication_classes([TokenAuthentication])
+def uploade_file_message(request,pk):
+    user = request.user
+    mes = get_object_or_404(Message,pk=pk)
+    if(mes.author != user):
+        return Response({"ERROR":"You can't do that"}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    files = request.FILES.getlist('file')
+    for f in files:
+        file_info = upload_image_to_backblaze(f)
+        if not file_info:
+            return Response({'error': 'file upload failed'}, status=status.HTTP_400_BAD_REQUEST)
+        MessageFile.objects.create(
+            message=mes,
+            name=file_info['file_name'],
+            signed_url_generated_at = timezone.now(),
+            signed_url=file_info['signed_url']
+            )
+
+    files = MessageFile.objects.filter(Message=mes)
+    output_serializer = MessageFileSerializer(files,many = True, context={'request': request})
+    return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@permission_classes([HasPermission("login")])
+@authentication_classes([TokenAuthentication])
+def get_file_message(request,pk):
+    user = request.user
+    mes = get_object_or_404(Message,pk=pk)
+    shared_groups = mes.group.filter(members=user)
+
+    if not shared_groups.exists():
+        return Response({"ERROR":"You can't do that"}, status=status.HTTP_401_UNAUTHORIZED)
+
+    files = MessageFile.objects.filter(Message=mes)
+    output_serializer = MessageFileSerializer(files,many = True, context={'request': request})
+    return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+

@@ -14,4 +14,7 @@ urlpatterns = [
 
     path("groups-share/", views.create_group_code),
     path("groups-join/", views.join_group_by_code),
+
+    path("uploade-file-message/<int:pk>", views.uploade_file_message),
+    path("get-file-message/<int:pk>", views.get_file_message),
 ]
