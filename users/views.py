@@ -22,7 +22,7 @@ from django.core.mail import EmailMessage
 from django.conf import settings
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.core.files.storage import default_storage
-from .utils import get_b2_signed_url, upload_image_to_backblaze
+from .utils import get_b2_signed_url, upload_image_to_backblaze,add_notifications
 
 
 def generate_random_string(length=10):
@@ -109,10 +109,21 @@ def RegisterView(request):
         
         user = serializer.save()
         token, created = Token.objects.get_or_create(user=user)
-        PermissionRequest.objects.create(
-                user = user,
-                permission = "login"
-            )
+
+        #PermissionRequest.objects.create(
+        #        user = user,
+        #        permission = "login"
+        #    )
+        #
+        #upgrade_permission = Permission.objects.get(permission = 'upgrade-user')
+        #users_to_notify = RCUser.objects.filter(Q(permissions = upgrade_permission))
+        #content = "User with email: " + user.email + "\nwant to use our app see it."
+        #title = 'New User'
+        #add_notifications(users_to_notify,content,title)
+
+        login_permission = get_object_or_404(Permission, permission='login')
+        user.permissions.add(login_permission)
+
         return Response({
             'id': user.pk,
             'email': user.email
@@ -355,12 +366,23 @@ def send_pending_permissions(request):
     user = request.user
     permissions = request.data['permissions']
 
+    upgrade_permission = Permission.objects.get(permission = 'upgrade-user')
+    users_to_notify = RCUser.objects.filter(Q(permissions = upgrade_permission))
+    content = "User with email: " + user.email + "\nrequset permissions see it."
+    title = 'Request to Upgrade'
+
+    f = True
+
     for per in permissions:
         try:
-            PermissionRequest.objects.create(
-                user = user,
-                permission = per
-            )
+            exists = PermissionRequest.objects.filter(user=user, permission=per).exists()
+
+            if not exists:
+                PermissionRequest.objects.create(user=user, permission=per)
+                if f:
+                    add_notifications(users_to_notify,content,title)
+                    f = False
+                
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
    
@@ -437,4 +459,44 @@ def upgrade_users_permissions(request):
             user.permissions.add(x)
         user.save()
         
+    return Response(status=status.HTTP_200_OK)
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, HasPermission("login")])
+@authentication_classes([TokenAuthentication])
+def get_notifications(request,i1,i2):
+    user = request.user
+    notis = Notification.objects.filter(user=user)[i1:i2]
+    data = NotificationSerialiser(notis,many=True).data
+    
+    for noti in notis:
+        noti.is_readed = True
+        noti.save()
+
+    return Response(data=data,status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, HasPermission("notification")])
+@authentication_classes([TokenAuthentication])
+def create_notifications(request):
+
+    content  = request.data['content']
+    title  = request.data['title']
+    is_all_selected  = request.data['is_all_selected']
+
+    users = []
+    
+    
+    if is_all_selected:
+        users = RCUser.objects.all()
+    else:
+        for email in request.data['users']:
+            user = get_object_or_404(RCUser,email=email)
+            users.append(user)
+
+    add_notifications(users=users,content=content,title=title)
+    
     return Response(status=status.HTTP_200_OK)

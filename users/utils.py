@@ -5,7 +5,7 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from django.conf import settings
 from b2sdk.v2 import B2Api, InMemoryAccountInfo
-
+from .models import RCUser, Notification
 
 def generate_random_string(length=10):
     letters = string.ascii_letters + string.digits
@@ -87,3 +87,12 @@ def get_b2_signed_url(file_name, duration_seconds=86400*6):  # 86400 = 24 hours
 
     # Return the signed URL
     return f"{base_url}?Authorization={auth_token}"
+
+
+def add_notifications(users, content: str, title: str):
+    for user in users:
+        Notification.objects.create(
+            user = user,
+            title = title,
+            content = content
+        )

@@ -1,6 +1,6 @@
 
 from rest_framework import serializers
-from .models import RCUser, Permission,Code,PermissionRequest
+from .models import RCUser, Permission,Code,PermissionRequest,Notification
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 
@@ -91,6 +91,17 @@ class PermissionRequestSerialiser(serializers.ModelSerializer):
     class Meta:
         model = PermissionRequest
         fields = ('pk','user','permission')
+
+    def get_user(self, obj):
+        return obj.user.email
+
+
+class NotificationSerialiser(serializers.ModelSerializer):
+    user = serializers.CharField()
+
+    class Meta:
+        model = Notification
+        fields = ('pk','user','title','content','date','is_readed')
 
     def get_user(self, obj):
         return obj.user.email

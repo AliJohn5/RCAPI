@@ -32,5 +32,6 @@ urlpatterns = [
     path('upload-user-image/', upload_user_image, name='upload_something_image'),
     path('get-user-image/<str:email>', get_user_image, name='get_something_image'),
 
-
+    path('get-notifications/<int:i1>/<int:i2>',get_notifications),
+    path('create-notifications/',create_notifications),
 ]

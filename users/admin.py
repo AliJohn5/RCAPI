@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import RCUser, Permission,Code,PermissionRequest
+from .models import RCUser, Permission,Code,PermissionRequest, Notification
 from unfold.admin import ModelAdmin
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.models import Group
@@ -49,10 +49,14 @@ class CustomAdminClass(ModelAdmin):
 @admin.register(Code)
 class CustomAdminClass(ModelAdmin):
     pass
+
 @admin.register(PermissionRequest)
 class CustomAdminClass(ModelAdmin):
     pass
 
+@admin.register(Notification)
+class CustomAdminClass(ModelAdmin):
+    pass
 #admin.site.register(RCUser)
 #admin.site.register(Permission)
 #admin.site.register(Code)

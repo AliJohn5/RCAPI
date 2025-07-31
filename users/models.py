@@ -62,5 +62,24 @@ class Code(models.Model):
 class PermissionRequest(models.Model):
     permission = models.CharField(max_length=255)
     user = models.ForeignKey(RCUser,on_delete=models.CASCADE,related_name="requests_to_upgrade")
+
+    class Meta:
+        unique_together = ('permission', 'user')
+        
     def __str__(self) -> str:
         return self.permission
+    
+
+class Notification(models.Model):
+
+    title = models.CharField(max_length=20)
+    content = models.TextField(blank=True)
+    user = models.ForeignKey(RCUser,on_delete=models.CASCADE,related_name="notis",db_constraint=False)
+    date = models.DateTimeField(auto_now_add=True)
+    is_readed = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.user.email + " : " + self.title
+    
+    class Meta:
+        ordering = ['-date']
