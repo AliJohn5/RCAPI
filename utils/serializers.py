@@ -9,12 +9,15 @@ from django.utils import timezone
 
 
 class BorrowSerializer(ModelSerializer):
-    person = RCUserSerializer(many=True,read_only = True)
-    something = SomeThingSerializer(many=False,read_only = True)
+    person = SerializerMethodField()
+    something = SomeThingSerializer(read_only = True)
 
     class Meta:
         model = Borrow
-        fields = ('pk','person','something','date_start','date_end','is_returned')
+        fields = ('pk','person','something','date_start','is_accepted')
+    
+    def get_person(self,obj):
+        return obj.person.email
 
 
 

@@ -21,9 +21,7 @@ class CustomAdminClass(ModelAdmin):
 class CustomAdminClass(ModelAdmin):
     pass
 
-@admin.register(ClosetImage)
-class CustomAdminClass(ModelAdmin):
-    pass
+
 @admin.register(ProjectImage)
 class CustomAdminClass(ModelAdmin):
     pass

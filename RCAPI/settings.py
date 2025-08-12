@@ -17,7 +17,7 @@ import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DEBUG = False
+DEBUG = True
 
 
 DEFENDER_LOGIN_FAILURE_LIMIT = 5  # Number of allowed login attempts

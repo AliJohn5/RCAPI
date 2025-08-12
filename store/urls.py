@@ -4,19 +4,26 @@ from django.urls import path
 urlpatterns = [
 
     path('test/',test),
+    path('init/',initialize_permissions),
+
 
     # read (list, one)
-    path('closets/',closets),
+    path('closets/<int:i1>/<int:i2>',closets),
     path('closets/<int:pk>',closets_pk),
 
-    path('mytypes/',mytypes),
+    path('mytypes/<int:i1>/<int:i2>',mytypes),
     path('mytypes/<int:pk>',mytypes_pk),
 
-    path('projects/',projects),
+    path('projects/<int:i1>/<int:i2>',projects),
     path('projects/<int:pk>',projects_pk),
 
-    path('somethings/',somethings),
+    path('somethings/<int:i1>/<int:i2>',somethings),
+    path('somethings/search/<int:i1>/<int:i2>',somethings_search),
     path('somethings/<int:pk>',somethings_pk),
+    
+    path('info',get_info),
+    path('proj-info/<int:pk>',get_proj_info),
+
     
     path('somethingsp/',somethings_private),
     path('somethingsp/<int:pk>',somethings_private_pk),
