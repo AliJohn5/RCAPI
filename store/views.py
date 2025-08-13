@@ -261,16 +261,26 @@ def create_proj(request):
 def create_thing(request):
     seri = SomeThingSerializer(data=request.data)
 
-    closet = get_object_or_404(Closet, name = request.data['closet'])
     mytype = get_object_or_404(Type, name = request.data['mytype'])
-    if(request.data['project']):
+
+    closet , project = None,None
+
+
+    if(request.data['project'] != "None" and request.data['project'] != ""):
         project = get_object_or_404(Project , name = request.data['project'])
 
+    if(request.data['closet'] != "None" and request.data['closet'] != ""):
+        closet = get_object_or_404(Closet, name = request.data['closet'])
+
     if seri.is_valid():
-        if(request.data['project']):
-            something = seri.save(closet = closet,mytype = mytype,project = project)
-        else:
-            something = seri.save(closet = closet,mytype = mytype)
+        
+        something = seri.save(mytype = mytype)
+
+        if(project):
+            something.project = project
+        if(closet):
+            something.closet = closet
+        
         images = request.FILES.getlist('images')
         for img in images:
             image_info = upload_image_to_backblaze(img)
@@ -393,13 +403,13 @@ def edit_thing(request,pk):
         typ =  get_object_or_404(Type ,name=request.data['mytype'] )
         ob.mytype = typ
 
-        if(request.data['project'] != ""):
+        if(request.data['project'] != "" and request.data['project'] != "None"):
             proj =   get_object_or_404(Project ,name=request.data['project'] )
             ob.project = proj
         else:
             ob.project = None
         
-        if(request.data['closet'] != ""):
+        if(request.data['closet'] != "" and request.data['closet'] != "None"):
             closet =   get_object_or_404(Closet ,name=request.data['closet'] )
             ob.closet = closet
         else:
@@ -407,6 +417,24 @@ def edit_thing(request,pk):
 
 
         ob.save()
+
+        images = request.FILES.getlist('images', [])
+
+        if images:
+            # Delete old images in one query
+            SomeThingImage.objects.filter(someThing=ob).delete()
+
+            for img in images:
+                image_info = upload_image_to_backblaze(img)
+                if not image_info:
+                    return Response(
+                        {'error': 'Image upload failed'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                SomeThingImage.objects.create(
+                    someThing=ob,
+                    image=image_info['file_name']
+                )
 
         return Response(seri.data,
                             status=status.HTTP_200_OK)

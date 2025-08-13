@@ -13,6 +13,7 @@ urlpatterns = [
     
     path('gencode/',GenerateCodeView),
     path('forgetpass/',ForgetPasswordView),
+    path('confirm/',ConfirmEmailView),
     path('upgrade/<str:email>',upgarde_user),
     path('downgrade/<str:email>',downgrade_user),
 

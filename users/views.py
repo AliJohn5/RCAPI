@@ -108,26 +108,23 @@ def RegisterView(request):
     if serializer.is_valid():
         
         user = serializer.save()
-        token, created = Token.objects.get_or_create(user=user)
-
-        #PermissionRequest.objects.create(
-        #        user = user,
-        #        permission = "login"
-        #    )
-        #
-        #upgrade_permission = Permission.objects.get(permission = 'upgrade-user')
-        #users_to_notify = RCUser.objects.filter(Q(permissions = upgrade_permission))
-        #content = "User with email: " + user.email + "\nwant to use our app see it."
-        #title = 'New User'
-        #add_notifications(users_to_notify,content,title)
-
         login_permission = get_object_or_404(Permission, permission='login')
         user.permissions.add(login_permission)
 
-        return Response({
-            'id': user.pk,
-            'email': user.email
-        }, status=status.HTTP_201_CREATED)
+
+        Code.objects.filter(user=user).delete()
+
+        code = Code.objects.create(
+            code = generate_random_string(10),
+            user = user
+        )
+
+        if(send_code_email(user.email,code=code.code) == "OK"):
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(  data={'details' : 'cant send email'},status=status.HTTP_400_BAD_REQUEST)
+        
+    
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
@@ -141,6 +138,11 @@ class Login(ObtainAuthToken):
         
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
+
+        code = Code.objects.filter(user=user).exists()
+
+        if(code):
+            return Response({"details":"Please confirm Your account.\nYou can't login now!!"},status=status.HTTP_406_NOT_ACCEPTABLE)
         
         if not user.permissions.filter(permission='login').exists():
             return Response({"details":"Please visit Robotic Club in Latakia university, to confirm your account.\nYou can't login now!!"},status=status.HTTP_401_UNAUTHORIZED)
@@ -161,7 +163,7 @@ class Login(ObtainAuthToken):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def GenerateCodeView(request):
-    user = RCUser.objects.get(email = request.data['email'])
+    user = get_object_or_404(RCUser,email = request.data['email'])
     if(user):
         oldcode = Code.objects.filter(user=user)
         for obj in oldcode:
@@ -202,6 +204,29 @@ def ForgetPasswordView(request):
     
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def ConfirmEmailView(request):
+    user = get_object_or_404(RCUser,email = request.data['email'])
+    try:
+        realcode = Code.objects.get(user=user).code
+    except:
+        return Response(status=status.HTTP_200_OK)
+    reccode = request.data['code']
+
+    if(user):
+        if(realcode != reccode):
+            return Response( data={'details' : 'wrong code'},status=status.HTTP_401_UNAUTHORIZED)
+        try:
+            obj = get_object_or_404(Code,user = user)
+        except:
+            return Response(status=status.HTTP_200_OK)
+        obj.delete()
+        return Response(status=status.HTTP_200_OK)
+        
+    else:
+        return Response( status=status.HTTP_404_NOT_FOUND)
+    
 
 
 @api_view(['POST'])
